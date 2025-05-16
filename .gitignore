@@ -1,0 +1,5 @@
+# ─── Log e runtime ────────────────────────────────────────
+squid/logs/
+snort/logs/
+*.pid
+*.log

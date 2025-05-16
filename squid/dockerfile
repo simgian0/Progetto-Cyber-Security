@@ -1,0 +1,9 @@
+# squid/Dockerfile
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt install -y squid && \  
+    apt-get install -y --no-install-recommends squidclient && \        
+    apt clean && rm -rf /var/lib/apt/lists/* 
+COPY squid.conf /etc/squid/squid.conf
+CMD ["squid", "-N", "-f", "/etc/squid/squid.conf"]

@@ -1,0 +1,14 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update && \
+    apt install -y snort iputils-ping iproute2 curl net-tools && \
+    apt clean
+
+# Config Snort base
+RUN mkdir -p /etc/snort/rules && \
+    touch /etc/snort/rules/local.rules && \
+    echo 'include $RULE_PATH/local.rules' >> /etc/snort/snort.conf
+
+CMD ["snort", "-i", "eth0", "-A", "console", "-c", "/etc/snort/snort.conf", "-K", "ascii"]
