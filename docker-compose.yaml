@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:15
+    container_name: database
     environment:
       POSTGRES_DB: mydb
       POSTGRES_USER: user
@@ -17,6 +18,7 @@ services:
 
   server:
     build: ./server
+    container_name: server
     depends_on:
       - db
     environment:
@@ -31,23 +33,29 @@ services:
 
   client:
     build: ./client
+    container_name: client
     depends_on:
-      - server
+    - server
+    - squid
+    environment:
+    - http_proxy=http://squid:3128
+    - https_proxy=http://squid:3128
     networks:
-      - app-network
+    - app-network
   snort:
     build: ./snort
+    container_name: snort
     cap_add:
-      - NET_ADMIN  # necessaria per Snort
-    networks:
-      - app-network
-    tty: true  # utile per debug e shell    
+    - NET_ADMIN
+    network_mode: "host"
+    tty: true    
   squid:
     build: ./squid
     container_name: squid
-    
+    networks:
+      - app-network
     ports:
-      - "3128:3128"              # proxy in uscita
+      - "3128:3128" # proxy in uscita
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
