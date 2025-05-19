@@ -1,8 +1,15 @@
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    team VARCHAR(50) NOT NULL
+)
+
 CREATE TABLE drawing_files (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    owner VARCHAR(100) NOT NULL,
 
     -- Colonne dedicate per i contenuti del disegno
     points TEXT, -- JSON o stringa custom (es. "[(x,y,color),...]")
@@ -21,134 +28,79 @@ CREATE TABLE drawing_files (
 --    notes TEXT
 --);
 
--- Popolamento tabella
-INSERT INTO drawing_files (name, owner, points, lines, texts) VALUES
-('schema_rete', 'alice',
- '[{"x":10.5,"y":20.3,"color":"red"}]',
- '[{"start_x":10.5,"start_y":20.3,"end_x":15.0,"end_y":25.0,"color":"blue"}]',
- '[{"x":12.0,"y":18.0,"content":"Firewall","font_size":12,"color":"black"}]'),
+-- Inserimento utenti
+-- ruoli: manager (read/write/delete), impiegato (read/write), consulente (read)
+-- teams: Team 1, Team 2, Team 3, Team 4
+INSERT INTO users (name, role, team) VALUES
+('Alice', 'manager', 'Team 1'),
+('Bob', 'impiegato', 'Team 2'),
+('Carol', 'consulente', 'Team 1'),
+('David', 'impiegato', 'Team 3'),
+('Eva', 'manager', 'Team 4'),
+('Frank', 'consulente', 'Team 2'),
+('Grace', 'impiegato', 'Team 4'),
+('Hannah', 'manager', 'Team 3'),
+('Ian', 'consulente', 'Team 3'),
+('Julia', 'impiegato', 'Team 1'),
+('Kevin', 'manager', 'Team 2'),
+('Laura', 'consulente', 'Team 4'),
+('Mike', 'impiegato', 'Team 1'),
+('Nina', 'manager', 'Team 3'),
+('Oscar', 'consulente', 'Team 2'),
+('Paul', 'impiegato', 'Team 4'),
+('Quinn', 'manager', 'Team 1'),
+('Rachel', 'consulente', 'Team 3'),
+('Sam', 'impiegato', 'Team 2'),
+('Tina', 'manager', 'Team 4');
 
-('topologia_ufficio', 'bob',
- '[{"x":5.0,"y":5.0,"color":"green"},{"x":8.0,"y":8.0,"color":"red"}]',
- '[{"start_x":5.0,"start_y":5.0,"end_x":8.0,"end_y":8.0,"color":"orange"}]',
- '[{"x":6.0,"y":6.0,"content":"Router","font_size":10,"color":"blue"}]'),
+-- Inserimento disegni
+INSERT INTO drawing_files (name, owner_id, points, lines, texts) VALUES
+('Network Diagram', 1, 
+'[{"x":10,"y":20,"color":"red"}]', 
+'[{"start_x":10,"start_y":20,"end_x":15,"end_y":25,"color":"blue"}]', 
+'[{"x":12,"y":18,"content":"Firewall","font_size":12,"color":"black"}]'),
 
-('schema_wifi', 'carol',
- '[{"x":1.0,"y":1.0,"color":"purple"}]',
- '[{"start_x":1.0,"start_y":1.0,"end_x":3.0,"end_y":3.0,"color":"black"}]',
- '[{"x":2.0,"y":2.0,"content":"Access Point","font_size":14,"color":"gray"}]'),
+('Security Layout', 2, 
+'[{"x":5,"y":5,"color":"green"}]', 
+'[{"start_x":5,"start_y":5,"end_x":8,"end_y":8,"color":"orange"}]', 
+'[{"x":6,"y":6,"content":"IDS Sensor","font_size":10,"color":"blue"}]'),
 
-('net_diagram', 'dave',
- '[{"x":7.1,"y":2.3,"color":"red"}]',
- '[{"start_x":7.1,"start_y":2.3,"end_x":9.1,"end_y":4.3,"color":"blue"}]',
- '[{"x":8.0,"y":3.0,"content":"Switch","font_size":11,"color":"green"}]'),
+('Design Sketch', 4, 
+'[{"x":1,"y":1,"color":"purple"}]', 
+'[{"start_x":1,"start_y":1,"end_x":3,"end_y":3,"color":"black"}]', 
+'[{"x":2,"y":2,"content":"Logo","font_size":14,"color":"gray"}]'),
 
-('lan_layout', 'erin',
- '[{"x":2.0,"y":9.0,"color":"blue"}]',
- '[{"start_x":2.0,"start_y":9.0,"end_x":4.0,"end_y":9.0,"color":"yellow"}]',
- '[{"x":3.0,"y":9.0,"content":"LAN","font_size":10,"color":"black"}]'),
+('Office Plan', 5, 
+'[{"x":12,"y":15,"color":"blue"}]', 
+'[{"start_x":12,"start_y":15,"end_x":17,"end_y":20,"color":"green"}]', 
+'[{"x":14,"y":16,"content":"Desk","font_size":11,"color":"brown"}]'),
 
-('home_lab', 'frank',
- '[{"x":4.2,"y":1.1,"color":"cyan"}]',
- '[{"start_x":4.2,"start_y":1.1,"end_x":6.2,"end_y":2.1,"color":"red"}]',
- '[{"x":5.0,"y":1.5,"content":"Pi Server","font_size":13,"color":"magenta"}]'),
+('Server Room', 7, 
+'[{"x":20,"y":22,"color":"black"}]', 
+'[{"start_x":20,"start_y":22,"end_x":25,"end_y":27,"color":"grey"}]', 
+'[{"x":21,"y":23,"content":"Server Rack","font_size":12,"color":"silver"}]'),
 
-('dmz_diagram', 'grace',
- '[{"x":6.6,"y":5.5,"color":"orange"}]',
- '[{"start_x":6.6,"start_y":5.5,"end_x":8.6,"end_y":7.5,"color":"green"}]',
- '[{"x":7.5,"y":6.5,"content":"DMZ","font_size":12,"color":"brown"}]'),
+('Conference Room', 8, 
+'[{"x":30,"y":32,"color":"cyan"}]', 
+'[{"start_x":30,"start_y":32,"end_x":35,"end_y":37,"color":"purple"}]', 
+'[{"x":31,"y":33,"content":"Projector","font_size":13,"color":"white"}]'),
 
-('vpn_setup', 'henry',
- '[{"x":1.1,"y":1.1,"color":"gray"}]',
- '[{"start_x":1.1,"start_y":1.1,"end_x":3.1,"end_y":3.1,"color":"purple"}]',
- '[{"x":2.0,"y":2.0,"content":"VPN","font_size":11,"color":"navy"}]'),
+('Reception Area', 10, 
+'[{"x":40,"y":42,"color":"orange"}]', 
+'[{"start_x":40,"start_y":42,"end_x":45,"end_y":47,"color":"yellow"}]', 
+'[{"x":41,"y":43,"content":"Reception Desk","font_size":10,"color":"beige"}]'),
 
-('tor_network', 'ivan',
- '[{"x":3.3,"y":3.3,"color":"red"}]',
- '[{"start_x":3.3,"start_y":3.3,"end_x":5.3,"end_y":5.3,"color":"black"}]',
- '[{"x":4.0,"y":4.0,"content":"TOR","font_size":12,"color":"gray"}]'),
+('Lobby', 11, 
+'[{"x":50,"y":52,"color":"magenta"}]', 
+'[{"start_x":50,"start_y":52,"end_x":55,"end_y":57,"color":"pink"}]', 
+'[{"x":51,"y":53,"content":"Lobby Area","font_size":14,"color":"red"}]'),
 
-('honeypot_layout', 'jane',
- '[{"x":9.1,"y":2.2,"color":"yellow"}]',
- '[{"start_x":9.1,"start_y":2.2,"end_x":10.1,"end_y":3.2,"color":"blue"}]',
- '[{"x":9.6,"y":2.7,"content":"Honeypot","font_size":10,"color":"red"}]'),
+('Test Lab', 13, 
+'[{"x":60,"y":62,"color":"blue"}]', 
+'[{"start_x":60,"start_y":62,"end_x":65,"end_y":67,"color":"green"}]', 
+'[{"x":61,"y":63,"content":"Workstation","font_size":12,"color":"orange"}]'),
 
-('dns_map', 'kate',
- '[{"x":2.1,"y":4.1,"color":"green"}]',
- '[{"start_x":2.1,"start_y":4.1,"end_x":4.1,"end_y":6.1,"color":"cyan"}]',
- '[{"x":3.0,"y":5.0,"content":"DNS","font_size":9,"color":"purple"}]'),
-
-('ntp_nodes', 'leo',
- '[{"x":8.8,"y":8.8,"color":"blue"}]',
- '[{"start_x":8.8,"start_y":8.8,"end_x":9.8,"end_y":9.8,"color":"black"}]',
- '[{"x":9.0,"y":9.0,"content":"NTP","font_size":11,"color":"orange"}]'),
-
-('siem_flow', 'mia',
- '[{"x":3.9,"y":2.9,"color":"gray"}]',
- '[{"start_x":3.9,"start_y":2.9,"end_x":6.9,"end_y":5.9,"color":"red"}]',
- '[{"x":5.0,"y":4.0,"content":"SIEM","font_size":12,"color":"green"}]'),
-
-('audit_trail', 'nina',
- '[{"x":1.5,"y":1.5,"color":"brown"}]',
- '[{"start_x":1.5,"start_y":1.5,"end_x":2.5,"end_y":2.5,"color":"blue"}]',
- '[{"x":2.0,"y":2.0,"content":"Audit","font_size":10,"color":"gray"}]'),
-
-('firewall_rules', 'otto',
- '[{"x":6.0,"y":3.0,"color":"red"}]',
- '[{"start_x":6.0,"start_y":3.0,"end_x":7.0,"end_y":4.0,"color":"orange"}]',
- '[{"x":6.5,"y":3.5,"content":"Rule","font_size":11,"color":"black"}]'),
-
-('proxy_paths', 'paul',
- '[{"x":7.0,"y":1.0,"color":"green"}]',
- '[{"start_x":7.0,"start_y":1.0,"end_x":8.0,"end_y":2.0,"color":"purple"}]',
- '[{"x":7.5,"y":1.5,"content":"Proxy","font_size":10,"color":"blue"}]'),
-
-('splunk_feed', 'quinn',
- '[{"x":4.0,"y":7.0,"color":"black"}]',
- '[{"start_x":4.0,"start_y":7.0,"end_x":6.0,"end_y":9.0,"color":"green"}]',
- '[{"x":5.0,"y":8.0,"content":"Log","font_size":9,"color":"red"}]'),
-
-('alert_routes', 'rachel',
- '[{"x":2.2,"y":3.3,"color":"blue"}]',
- '[{"start_x":2.2,"start_y":3.3,"end_x":3.2,"end_y":4.3,"color":"black"}]',
- '[{"x":2.7,"y":3.8,"content":"Alert","font_size":11,"color":"magenta"}]'),
-
-('ids_map', 'sam',
- '[{"x":5.5,"y":5.5,"color":"red"}]',
- '[{"start_x":5.5,"start_y":5.5,"end_x":7.5,"end_y":7.5,"color":"gray"}]',
- '[{"x":6.5,"y":6.5,"content":"Snort","font_size":10,"color":"blue"}]'),
-
-('monitoring_zones', 'tina',
- '[{"x":3.3,"y":6.6,"color":"purple"}]',
- '[{"start_x":3.3,"start_y":6.6,"end_x":5.3,"end_y":8.6,"color":"cyan"}]',
- '[{"x":4.3,"y":7.6,"content":"Zone","font_size":12,"color":"green"}]'),
-
- ('udp_layout', 'ursula',
- '[{"x":1.2,"y":2.2,"color":"green"}]',
- '[{"start_x":1.2,"start_y":2.2,"end_x":3.2,"end_y":4.2,"color":"yellow"}]',
- '[{"x":2.0,"y":3.0,"content":"UDP","font_size":10,"color":"black"}]'),
-
-('vlan_structure', 'victor',
- '[{"x":4.4,"y":4.4,"color":"blue"}]',
- '[{"start_x":4.4,"start_y":4.4,"end_x":6.4,"end_y":6.4,"color":"orange"}]',
- '[{"x":5.0,"y":5.0,"content":"VLAN 10","font_size":11,"color":"red"}]'),
-
-('wan_topology', 'wade',
- '[{"x":2.2,"y":5.5,"color":"purple"}]',
- '[{"start_x":2.2,"start_y":5.5,"end_x":4.2,"end_y":7.5,"color":"green"}]',
- '[{"x":3.0,"y":6.5,"content":"WAN","font_size":12,"color":"blue"}]'),
-
-('xss_lab', 'xena',
- '[{"x":7.7,"y":2.2,"color":"red"}]',
- '[{"start_x":7.7,"start_y":2.2,"end_x":9.7,"end_y":4.2,"color":"black"}]',
- '[{"x":8.0,"y":3.0,"content":"<script>","font_size":10,"color":"gray"}]'),
-
-('yaml_config', 'yuri',
- '[{"x":3.1,"y":3.9,"color":"brown"}]',
- '[{"start_x":3.1,"start_y":3.9,"end_x":5.1,"end_y":5.9,"color":"blue"}]',
- '[{"x":4.0,"y":4.9,"content":"Config","font_size":9,"color":"green"}]'),
-
-('zero_trust_zone', 'zoe',
- '[{"x":6.6,"y":6.6,"color":"gray"}]',
- '[{"start_x":6.6,"start_y":6.6,"end_x":8.6,"end_y":8.6,"color":"cyan"}]',
- '[{"x":7.5,"y":7.5,"content":"Zero Trust","font_size":12,"color":"black"}]');
+('Warehouse Layout', 16, 
+'[{"x":70,"y":72,"color":"grey"}]', 
+'[{"start_x":70,"start_y":72,"end_x":75,"end_y":77,"color":"black"}]', 
+'[{"x":71,"y":73,"content":"Storage","font_size":13,"color":"brown"}]');
