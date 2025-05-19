@@ -35,25 +35,52 @@ services:
       - server
     networks:
       - app-network
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128  
   snort:
     build: ./snort
-    cap_add:
-      - NET_ADMIN  # necessaria per Snort
-    networks:
-      - app-network
-    tty: true  # utile per debug e shell    
+    cap_add: [ NET_ADMIN ]
+    tty: true
+    networks: [ app-network ]
+    # esempio: esporta alert JSON direttamente a Splunk (imposta il TOKEN dopo averlo creato)
+    environment:
+      SPLUNK_HEC_URL: http://splunk:8088/services/collector
+      SPLUNK_HEC_TOKEN: autogen
+      SPLUNK_HEC_INDEX: snort    
   squid:
     build: ./squid
     container_name: squid
-    
-    ports:
-      - "3128:3128"              # proxy in uscita
+    ports: [ "3128:3128" ]
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
+    networks: [ app-network ]
+
+  splunk:
+    # host ARM? forziamo l'immagine x86-64 con QEMU
+    platform: linux/amd64
+    image: splunk/splunk:9.4.2        # tag x86-64 disponibile su Docker Hub
+    container_name: splunk
+    restart: unless-stopped
+    ports:
+      - "18000:8000"   # GUI
+      - "8088:8088"   # HEC (HTTP Event Collector)
+      - "8089:8089"   # Management (usato da UF)
+    environment:
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: Chang3d!
+      # abilita HEC automaticamente (facoltativo)
+      SPLUNK_HEC_TOKEN:  ENABLED             # ne genera uno e lo stampa nei log
+      SPLUNK_HEC_ENABLE: "true"   
+      SPLUNK_HEC_PORT: 8088
+    # persistenza dei dati Splunk
+    volumes:
+      - splunk-data:/opt/splunk/var
+    networks: [ app-network ]
 volumes:
   db-data:
-
+  splunk-data:
 networks:
   app-network:
     driver: bridge
