@@ -3,7 +3,7 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,
     team VARCHAR(50) NOT NULL
-)
+);
 
 CREATE TABLE drawing_files (
     id SERIAL PRIMARY KEY,
