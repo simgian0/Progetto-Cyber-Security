@@ -39,22 +39,21 @@ services:
       HTTP_PROXY:  http://squid:3128
       HTTPS_PROXY: http://squid:3128  
   snort:
+    platform: linux/amd64
     build: ./snort
-    cap_add: [ NET_ADMIN ]
-    tty: true
-    networks: [ app-network ]
-    # esempio: esporta alert JSON direttamente a Splunk (imposta il TOKEN dopo averlo creato)
-    environment:
-      SPLUNK_HEC_URL: http://splunk:8088/services/collector
-      SPLUNK_HEC_TOKEN: autogen
-      SPLUNK_HEC_INDEX: snort    
+    cap_add: [ NET_ADMIN ] 
+    volumes:
+      - snort-logs:/var/log/snort
+    networks: [ app-network ]  
   squid:
+    platform: linux/amd64
     build: ./squid
     container_name: squid
     ports: [ "3128:3128" ]
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
+    user: "13:13"  
     networks: [ app-network ]
 
   splunk:
@@ -64,10 +63,12 @@ services:
     container_name: splunk
     restart: unless-stopped
     ports:
-      - "18000:8000"   # GUI
+      - "18100:8000"   # GUI
       - "8088:8088"   # HEC (HTTP Event Collector)
       - "8089:8089"   # Management (usato da UF)
+      - "9997:9997"   # Splunk Forwarder (usato da UF)
     environment:
+      TZ: Europe/Rome
       SPLUNK_START_ARGS: "--accept-license"
       SPLUNK_PASSWORD: Chang3d!
       # abilita HEC automaticamente (facoltativo)
@@ -78,9 +79,37 @@ services:
     volumes:
       - splunk-data:/opt/splunk/var
     networks: [ app-network ]
+  splunk-uf:
+    platform: linux/amd64
+    image: splunk/universalforwarder:9.4.2
+    cap_add:
+      - DAC_OVERRIDE
+      - CHOWN
+    environment:
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: Chang3d!
+      SPLUNK_ADD: >
+        monitor /logs/access.log -index squid -sourcetype squid_access,
+        monitor /var/log/snort/alert -index snort -sourcetype snort:fast
+      SPLUNK_CMD: "add forward-server splunk:9997"
+    volumes:
+      - ./squid/logs:/logs:ro
+      - snort-logs:/snort:ro
+      - uf-var:/opt/splunkforwarder/var
+    networks: [ app-network ]
+
+
+
+
+
 volumes:
   db-data:
   splunk-data:
+  uf-var:
+  snort-logs:
 networks:
   app-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"
+      com.docker.network.enable_ipv6: "false"

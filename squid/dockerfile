@@ -1,9 +1,12 @@
-# squid/Dockerfile
 FROM ubuntu:22.04
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt install -y squid && \  
-    apt-get install -y --no-install-recommends squidclient && \        
-    apt clean && rm -rf /var/lib/apt/lists/* 
+RUN apt-get update && apt-get install -y squid && \
+    # directory PID + log 
+    mkdir -p /run/squid /var/log/squid && \
+    chown -R 13:13 /run/squid /var/log/squid && \
+    rm -rf /var/lib/apt/lists/*
+    RUN mkdir -p /run/squid && chown proxy:proxy /run/squid
+
 COPY squid.conf /etc/squid/squid.conf
-CMD ["squid", "-N", "-f", "/etc/squid/squid.conf"]
+# diamo a squid il suo utente
+USER proxy
+CMD ["squid","-N","-f","/etc/squid/squid.conf","-n","squid"]

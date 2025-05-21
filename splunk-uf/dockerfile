@@ -1,0 +1,13 @@
+FROM splunk/universalforwarder:9.4.2
+
+ENV SPLUNK_HOME=/opt/splunkforwarder
+
+# Copio le configurazioni
+COPY inputs.conf  $SPLUNK_HOME/etc/system/local/inputs.conf
+COPY outputs.conf $SPLUNK_HOME/etc/system/local/outputs.conf
+
+# ⚠️  Azzeriamo l’ENTRYPOINT originale
+ENTRYPOINT []
+
+# Avvio diretto della UF (niente Ansible, niente controlli extra)
+CMD ["/opt/splunkforwarder/bin/splunk", "start","--accept-license", "--answer-yes", "--no-prompt", "--nodaemon"]
