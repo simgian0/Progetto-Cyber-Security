@@ -11,7 +11,7 @@ import random
 BASE_URL = os.getenv("SERVER_URL", "http://server:8000")
 
 OWNER_IDS = [1, 2, 4, 5, 7, 8, 10, 11, 13, 16]  # solo manager/impiegato
-EXISTING_DRAWING_IDS = list(range(1, 11))  # ipotetici ID esistenti
+#EXISTING_DRAWING_IDS = list(range(1, 11))  # ipotetici ID esistenti
 
 def get_random_payload(modify_name_only=False):
     if modify_name_only:
@@ -27,40 +27,66 @@ def get_random_payload(modify_name_only=False):
             "texts": '[{"x":1,"y":1,"content":"AutoGen","font_size":10,"color":"gray"}]'
         }
 
+# Sequenza predefinita per test
+TEST_SEQUENCE = [
+    {
+        "action": "POST",
+        "drawing_id": None,
+        "payload": lambda: get_random_payload(),  # usa funzione
+        "user_id": 1
+    },
+    {
+        "action": "GET_ONE",
+        "drawing_id": 1,
+        "payload": None,
+        "user_id": 10
+    },
+    {
+        "action": "PUT",
+        "drawing_id": 1,
+        "payload": lambda: get_random_payload(modify_name_only=True),
+        "user_id": 10
+    },
+    {
+        "action": "DELETE",
+        "drawing_id": 1,
+        "payload": None,
+        "user_id": 10
+    },
+]
+
 def run():
-    while True:
-        action = random.choice(["GET_ONE", "POST", "PUT", "DELETE"])
-        print(f"Azione scelta dal client: {action}")
-        try:
-            drawing_id = random.choice(EXISTING_DRAWING_IDS)
+    while True: # cicla infinitamente nella sequenza
+        for req in TEST_SEQUENCE:
+            action = req["action"]
+            user_id = req["user_id"]
+            drawing_id = req["drawing_id"]
+            payload = req["payload"]() if callable(req["payload"]) else req["payload"]
 
-            if action == "GET_ONE":
-                resp = requests.get(f"{BASE_URL}/drawings/{drawing_id}", timeout=5)
-                print(f"[GET_ONE] id {drawing_id} -> {resp.status_code}")
+            print(f"\n - {action} da user {user_id}")
+            headers = {"X-User-ID": str(user_id)}  # gestisce il server
 
-            elif action == "POST":
-                payload = get_random_payload()
-                resp = requests.post(f"{BASE_URL}/drawings", json=payload, timeout=5)
-                new_id = resp.json().get('id')
-                if new_id:
-                    EXISTING_DRAWING_IDS.append(new_id)
-                print(f"[POST] created id {new_id}")
+            try:
+                if action == "GET_ONE":
+                    resp = requests.get(f"{BASE_URL}/drawings/{drawing_id}", headers=headers, timeout=5)
+                    print(f"[GET_ONE] drawing_id: {drawing_id} -> status_code: {resp.status_code} | {resp.json()}")
 
-            elif action == "PUT":
-                payload = get_random_payload(modify_name_only=True)
-                resp = requests.put(f"{BASE_URL}/drawings/{drawing_id}", json=payload, timeout=5)
-                print(f"[PUT] updated id {drawing_id}")
+                elif action == "POST":
+                    resp = requests.post(f"{BASE_URL}/drawings", json=payload, headers=headers, timeout=5)
+                    print(f"[POST] -> status_code: {resp.status_code} | {resp.json()}")
 
-            elif action == "DELETE":
-                resp = requests.delete(f"{BASE_URL}/drawings/{drawing_id}", timeout=5)
-                if resp.status_code == 200 and drawing_id in EXISTING_DRAWING_IDS:
-                    EXISTING_DRAWING_IDS.remove(drawing_id)
-                print(f"[DELETE] removed id {drawing_id}")
+                elif action == "PUT":
+                    resp = requests.put(f"{BASE_URL}/drawings/{drawing_id}", json=payload, headers=headers, timeout=5)
+                    print(f"[PUT] drawing_id: {drawing_id} -> status_code: {resp.status_code} | {resp.json()}")
 
-        except Exception as e:
-            print(f"[ERROR] {action} failed: {e}")
+                elif action == "DELETE":
+                    resp = requests.delete(f"{BASE_URL}/drawings/{drawing_id}", headers=headers, timeout=5)
+                    print(f"[DELETE] drawing_id: {drawing_id} -> status_code: {resp.status_code} | {resp.json()}")
 
-        time.sleep(10)
+            except Exception as e:
+                print(f"[ERROR] {action} fallita: {e}")
+
+            time.sleep(10)
 
 if __name__ == "__main__":
     run()
