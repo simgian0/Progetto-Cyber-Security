@@ -69,11 +69,11 @@ def run():
 
             try:
                 if action == "GET_ONE":
-                    resp = requests.get(f"{BASE_URL}/drawings/{drawing_id}", headers=headers, timeout=5)
+                    resp = requests.get(f"{BASE_URL}/api/drawings/{drawing_id}", headers=headers, timeout=5)
                     print(f"[GET_ONE] drawing_id: {drawing_id} -> status_code: {resp.status_code} | {resp.json()}")
 
                 elif action == "POST":
-                    resp = requests.post(f"{BASE_URL}/drawings", json=payload, headers=headers, timeout=5)
+                    resp = requests.post(f"{BASE_URL}/api/drawings", json=payload, headers=headers, timeout=5)
                     result = resp.json()
                     new_id = result.get("id")
                     if new_id and new_id not in EXISTING_DRAWING_IDS:
@@ -81,11 +81,11 @@ def run():
                     print(f"[POST] -> status_code: {resp.status_code} | {resp.json()}")
 
                 elif action == "PUT":
-                    resp = requests.put(f"{BASE_URL}/drawings/{drawing_id}", json=payload, headers=headers, timeout=5)
+                    resp = requests.put(f"{BASE_URL}/api/drawings/{drawing_id}", json=payload, headers=headers, timeout=5)
                     print(f"[PUT] drawing_id: {drawing_id} -> status_code: {resp.status_code} | {resp.json()}")
 
                 elif action == "DELETE":
-                    resp = requests.delete(f"{BASE_URL}/drawings/{drawing_id}", headers=headers, timeout=5)
+                    resp = requests.delete(f"{BASE_URL}/api/drawings/{drawing_id}", headers=headers, timeout=5)
                     print(f"[DELETE] drawing_id: {drawing_id} -> status_code: {resp.status_code} | {resp.json()}")
                     if action == "DELETE" and resp.status_code == 200:
                         if drawing_id in EXISTING_DRAWING_IDS:

@@ -11,12 +11,12 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./server/db/db.sql:/docker-entrypoint-initdb.d/db.sql
+      - ./server_express/src/database/db.sql:/docker-entrypoint-initdb.d/db.sql
     networks:
       - app-network
 
   server:
-    build: ./server
+    build: ./server_express
     depends_on:
       - db
     environment:

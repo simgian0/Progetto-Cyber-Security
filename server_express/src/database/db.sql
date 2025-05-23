@@ -5,7 +5,7 @@ CREATE TABLE users (
     team VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE drawing_files (
+CREATE TABLE drawings (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -20,7 +20,7 @@ CREATE TABLE drawing_files (
 -- Tabella per log???
 --CREATE TABLE security_events (
 --    id SERIAL PRIMARY KEY,
---    drawing_id INTEGER REFERENCES drawing_files(id) ON DELETE CASCADE,
+--    drawing_id INTEGER REFERENCES drawings(id) ON DELETE CASCADE,
 --    event_type VARCHAR(50), -- es: 'access', 'modify', 'delete'
 --    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 --    ip_address INET,
@@ -54,7 +54,7 @@ INSERT INTO users (name, role, team) VALUES
 ('Tina', 'manager', 'Team 4');
 
 -- Inserimento disegni
-INSERT INTO drawing_files (name, owner_id, points, lines, texts) VALUES
+INSERT INTO drawings (name, owner_id, points, lines, texts) VALUES
 ('Network Diagram', 1, 
 '[{"x":10,"y":20,"color":"red"}]', 
 '[{"start_x":10,"start_y":20,"end_x":15,"end_y":25,"color":"blue"}]', 
