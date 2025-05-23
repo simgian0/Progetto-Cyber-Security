@@ -39,12 +39,11 @@ services:
       HTTP_PROXY:  http://squid:3128
       HTTPS_PROXY: http://squid:3128  
   snort:
-    platform: linux/amd64
     build: ./snort
-    cap_add: [ NET_ADMIN ] 
+    network_mode: "service:squid"  # Snort “sniffa” sull’interfaccia di Squid
+    cap_add: [ NET_ADMIN ]
     volumes:
       - snort-logs:/var/log/snort
-    networks: [ app-network ]  
   squid:
     platform: linux/amd64
     build: ./squid
@@ -79,28 +78,17 @@ services:
     volumes:
       - splunk-data:/opt/splunk/var
     networks: [ app-network ]
-  splunk-uf:
-    platform: linux/amd64
-    image: splunk/universalforwarder:9.4.2
-    cap_add:
-      - DAC_OVERRIDE
-      - CHOWN
-    environment:
-      SPLUNK_START_ARGS: "--accept-license"
-      SPLUNK_PASSWORD: Chang3d!
-      SPLUNK_ADD: >
-        monitor /logs/access.log -index squid -sourcetype squid_access,
-        monitor /var/log/snort/alert -index snort -sourcetype snort:fast
-      SPLUNK_CMD: "add forward-server splunk:9997"
+  fluentbit:
+    image: fluent/fluent-bit:2.1
+    container_name: fluentbit
+    depends_on:
+      - splunk
     volumes:
-      - ./squid/logs:/logs:ro
-      - snort-logs:/snort:ro
-      - uf-var:/opt/splunkforwarder/var
-    networks: [ app-network ]
-
-
-
-
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./squid/logs:/var/log/squid:ro
+      - snort-logs:/var/log/snort:ro
+    networks:
+      - app-network
 
 volumes:
   db-data:

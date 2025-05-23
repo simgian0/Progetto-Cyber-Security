@@ -15,4 +15,4 @@ COPY local.rules /etc/snort/rules/local.rules
 # Imposta la variabile RULE_PATH (molti snort.conf la usano)
 ENV RULE_PATH=/etc/snort/rules
 
-CMD ["snort","--daq","pcap","-i","any","-A","fast","-l","/var/log/snort","-c","/etc/snort/snort.conf","-k","none"]
+CMD ["snort","--daq","pcap","-i","eth0","-A","fast","-l","/var/log/snort","-c","/etc/snort/snort.conf","-k","none"]
