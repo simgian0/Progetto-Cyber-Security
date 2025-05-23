@@ -8,11 +8,10 @@ RUN apt-get update && \
 RUN mkdir -p /etc/snort/rules /var/log/snort && \
     echo 'include $RULE_PATH/local.rules' >> /etc/snort/snort.conf
 
-
 # Copia il file local.rules dentro il container
 COPY local.rules /etc/snort/rules/local.rules
 
-# Imposta la variabile RULE_PATH (molti snort.conf la usano)
+# Imposta la variabile RULE_PATH 
 ENV RULE_PATH=/etc/snort/rules
 
 CMD ["snort","--daq","pcap","-i","eth0","-A","fast","-l","/var/log/snort","-c","/etc/snort/snort.conf","-k","none"]
