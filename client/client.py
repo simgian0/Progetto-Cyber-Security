@@ -10,9 +10,32 @@ import random
 
 BASE_URL = os.getenv("SERVER_URL", "http://server:8000")
 
+# ------ ARRAY PER TEST ------
+# USERS
 ALL_USER_IDS = list(range(1, 21)) # lista di tutti gli utenti
-OWNER_IDS = [1, 2, 4, 5, 7, 8, 10, 11, 13, 16]  # solo manager/impiegato
-EXISTING_DRAWING_IDS = list(range(1, 11))  # ipotetici ID esistenti
+ALL_TEAM_1_IDS = [1, 3, 10, 13, 17] # tutti gli user id del team 1 (tutti i ruoli)
+ALL_TEAM_2_IDS = [2, 6, 11, 15, 19] # tutti gli user id del team 2 (tutti i ruoli)
+ALL_TEAM_3_IDS = [4, 8, 9, 14, 18] # tutti gli user id del team 3 (tutti i ruoli)
+ALL_TEAM_4_IDS = [5, 7, 12, 16, 20] # tutti gli user id del team 4 (tutti i ruoli)
+TEAM_1_MANAGER_IDS = [1, 17] # user id dei manager del team 1
+TEAM_2_MANAGER_IDS = [11] # user id dei manager del team 2
+TEAM_3_MANAGER_IDS = [8, 14] # user id dei manager del team 3
+TEAM_4_MANAGER_IDS = [5, 20] # user id dei manager del team 4
+TEAM_1_IMPIEG_IDS = [10, 13] # user id degli impiegati del team 1
+TEAM_2_IMPIEG_IDS = [2, 19] # user id degli impiegati del team 2
+TEAM_3_IMPIEG_IDS = [4] # user id degli impiegati del team 3
+TEAM_4_IMPIEG_IDS = [7, 16] # user id degli impiegati del team 4
+TEAM_1_CONSUL_IDS = [3] # user id dei consulenti del team 1
+TEAM_2_CONSUL_IDS = [6, 15] # user id dei consulenti del team 2
+TEAM_3_CONSUL_IDS = [9, 18] # user id dei consulenti del team 3
+TEAM_4_CONSUL_IDS = [12] # user id dei consulenti del team 4
+OWNER_IDS = [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20]  # tutti i manager/impiegato
+# DRAWINGS
+EXISTING_DRAWING_IDS = list(range(1, 11))  # ID dei disegni esistenti
+TEAM_1_DRAWINGS_IDS = [1, 7, 9] # drawings id del team 1
+TEAM_2_DRAWINGS_IDS = [2, 8] # drawings id del team 2
+TEAM_3_DRAWINGS_IDS = [3, 6] # drawings id del team 3
+TEAM_4_DRAWINGS_IDS = [4, 5, 10] # drawings id del team 4
 
 def get_random_payload(modify_name_only=False):
     if modify_name_only:
@@ -38,21 +61,21 @@ TEST_SEQUENCE = [
     },
     {
         "action": "GET_ONE",
-        "drawing_id": lambda: random.choice(EXISTING_DRAWING_IDS),
+        "drawing_id": lambda: random.choice(TEAM_1_DRAWINGS_IDS),
         "payload": None,
-        "user_id": lambda: random.choice(ALL_USER_IDS)
+        "user_id": lambda: random.choice(TEAM_1_CONSUL_IDS)
     },
     {
         "action": "PUT",
-        "drawing_id": lambda: random.choice(EXISTING_DRAWING_IDS),
+        "drawing_id": lambda: random.choice(TEAM_2_DRAWINGS_IDS),
         "payload": lambda: get_random_payload(modify_name_only=True),
-        "user_id": lambda: random.choice(OWNER_IDS)
+        "user_id": lambda: random.choice(TEAM_2_MANAGER_IDS)
     },
     {
         "action": "DELETE",
-        "drawing_id": lambda: random.choice(EXISTING_DRAWING_IDS),
+        "drawing_id": lambda: random.choice(TEAM_3_DRAWINGS_IDS),
         "payload": None,
-        "user_id": lambda: random.choice(OWNER_IDS)
+        "user_id": lambda: random.choice(TEAM_3_IMPIEG_IDS)
     },
 ]
 
@@ -65,7 +88,7 @@ def run():
             payload = req["payload"]() if callable(req["payload"]) else req["payload"]
 
             print(f"\n - {action} da user {user_id}")
-            headers = {"X-User-ID": str(user_id)}  # gestisce il server
+            headers = {"X-User-ID": str(user_id)}  # gestisce il server (come se user_id fosse l'utente autenticato)
 
             try:
                 if action == "GET_ONE":
@@ -98,15 +121,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
-# endpoints to hit – some valid, one intentionally invalid to show 404
-'''ENDPOINTS = ["/", "/db-check", "/db-check", "/not-found"]
-
-for path in ENDPOINTS:
-    url = f"{BASE_URL}{path}"
-    try:
-        resp = requests.get(url, timeout=5)
-        print(f"[{resp.status_code}] GET {url} -> {resp.text[:60]}")
-    except Exception as exc:
-        print(f"ERROR reaching {url}: {exc}")
-    time.sleep(2)  # pause so that logs are easier to follow'''

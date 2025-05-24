@@ -11,6 +11,9 @@ import CRUDController from "../controllers/CRUDController";
 import { errorFactory } from "../factory/FailMessage";
 import { ErrorMessage } from "../factory/Messages";
 
+//Import Middleware
+import permissionMiddleware from "../middleware/permissionMiddleware";
+
 // Instantiate error message factory
 const errorMessageFactory: errorFactory = new errorFactory();
 
@@ -27,10 +30,10 @@ export const API_PREFIX = '/api';
 // router.put(`${API_PREFIX}/users/:id`, async (req: any, res: any) => CRUDController.updateRecord(User, req, res));
 
 // CRUD Routes for Drawings
-router.post(`${API_PREFIX}/drawings`, async (req: any, res: any) => CRUDController.createRecord(Drawing, req, res));
-router.get(`${API_PREFIX}/drawings/:id`, async (req: any, res: any) => CRUDController.readOneRecord(Drawing, req, res));
-router.delete(`${API_PREFIX}/drawings/:id`, async (req: any, res: any) => CRUDController.deleteRecord(Drawing, req, res));
-router.put(`${API_PREFIX}/drawings/:id`, async (req: any, res: any) => CRUDController.updateRecord(Drawing, req, res));
+router.post(`${API_PREFIX}/drawings`, permissionMiddleware.checkRole(['manager', 'impiegato']), async (req: any, res: any) => CRUDController.createRecord(Drawing, req, res));
+router.get(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager', 'impiegato', 'consulente']), permissionMiddleware.checkTeam, async (req: any, res: any) => CRUDController.readOneRecord(Drawing, req, res));
+router.delete(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager']), permissionMiddleware.checkTeam, async (req: any, res: any) => CRUDController.deleteRecord(Drawing, req, res));
+router.put(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager', 'impiegato']), permissionMiddleware.checkTeam, async (req: any, res: any) => CRUDController.updateRecord(Drawing, req, res));
 
 // Export the router to be used in the main application
 export default router;

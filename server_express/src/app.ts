@@ -3,6 +3,7 @@ import { Database } from "./database/database";
 import { Sequelize } from "sequelize";
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
+import * as errorMiddleware from "./middleware/errorHandler"
 dotenv.config();
 
 const app = express();
@@ -29,6 +30,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Use the routes defined in the routes file
 app.use(router);
+
+// Middleware to handle route not found errors (404)
+app.all('*', errorMiddleware.routeNotFound);
+
+// Middleware for general error handling
+app.use(errorMiddleware.ErrorHandler);
 
 // Start the Express server
 app.listen(PORT, () => {
