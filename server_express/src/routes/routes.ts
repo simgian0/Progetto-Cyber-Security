@@ -31,7 +31,7 @@ export const API_PREFIX = '/api';
 
 // CRUD Routes for Drawings
 router.post(`${API_PREFIX}/drawings`, permissionMiddleware.checkRole(['manager', 'impiegato']), async (req: any, res: any) => CRUDController.createRecord(Drawing, req, res));
-router.get(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager', 'impiegato', 'consulente']), permissionMiddleware.checkTeam, async (req: any, res: any) => CRUDController.readOneRecord(Drawing, req, res));
+router.get(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager', 'impiegato', 'consulente']), async (req: any, res: any) => CRUDController.readOneRecord(Drawing, req, res));
 router.delete(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager']), permissionMiddleware.checkTeam, async (req: any, res: any) => CRUDController.deleteRecord(Drawing, req, res));
 router.put(`${API_PREFIX}/drawings/:id`, permissionMiddleware.checkRole(['manager', 'impiegato']), permissionMiddleware.checkTeam, async (req: any, res: any) => CRUDController.updateRecord(Drawing, req, res));
 
