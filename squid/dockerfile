@@ -1,10 +1,14 @@
 FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y squid && \
+RUN apt-get update && apt-get install -y squid iptables && \
     # directory PID + log 
     mkdir -p /run/squid /var/log/squid && \
     chown -R 13:13 /run/squid /var/log/squid && \
     rm -rf /var/lib/apt/lists/*
-    RUN mkdir -p /run/squid && chown proxy:proxy /run/squid
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+USER root
+ENTRYPOINT ["/entrypoint.sh"]    
+RUN mkdir -p /run/squid && chown proxy:proxy /run/squid
 
 COPY squid.conf /etc/squid/squid.conf
 USER proxy

@@ -47,6 +47,8 @@ services:
   squid:
     platform: linux/amd64
     build: ./squid
+    cap_add:
+      - NET_ADMIN
     container_name: squid
     ports: [ "3128:3128" ]
     volumes:
