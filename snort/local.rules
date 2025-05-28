@@ -1,0 +1,2 @@
+alert icmp any any -> any any (msg:"ICMP test alert"; sid:1000001; rev:1;)
+alert tcp any any -> any 8000 (msg:"Client HTTP request detected"; sid:1000003; rev:1;)
