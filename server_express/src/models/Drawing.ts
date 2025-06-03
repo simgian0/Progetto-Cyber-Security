@@ -10,6 +10,7 @@ interface DrawingAttributes {
     id: number;
     name: string;
     owner_id: number;
+    target_team: string;
     created_at?: Date;
     points?: string;
     lines?: string;
@@ -24,6 +25,7 @@ class Drawing extends Model<DrawingAttributes, DrawingCreationAttributes> implem
     public id!: number;
     public name!: string;
     public owner_id!: number;
+    public target_team!: string;
     public created_at?: Date;
     public points?: string;
     public lines?: string;
@@ -49,6 +51,10 @@ Drawing.init({
             key: 'id'
         },
         onDelete: 'CASCADE'
+    },
+    target_team: {
+        type: DataTypes.STRING(50),
+        allowNull: false
     },
     created_at: {
         type: DataTypes.DATE,

@@ -79,16 +79,8 @@ class permissionMiddleware{
                 return res.json({ error: message });
             }
 
-            // Recupera l'utente proprietario tramite owner_id
-            const owner = await User.findByPk(drawing.owner_id);
-
-            if (!owner) {
-                const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Owner of the drawing not found');
-                return res.status(404).json({ error: message });
-            }
-
-            // Verifica se il team dell'utente corrisponde al team del proprietario del disegno
-            if (user.team !== owner.team) {
+            // Verifica se il team dell'utente corrisponde al team del proprietario del disegno, Consenti se l'utente è il proprietario, anche se il team è diverso
+            if (user.id !== drawing.owner_id && user.team !== drawing.target_team) {
                 const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Forbidden: You are not in the same team as the drawing owner');
                 return res.json({ error: message });
             }
@@ -100,6 +92,46 @@ class permissionMiddleware{
             return res.json({ error: message });
         }
     }
+
+    checkTargetTeam = async (req: Request, res: Response, next: NextFunction) => {
+        const userId = Number(req.headers['x-user-id']);
+        if (isNaN(userId)) {
+            const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'User not authenticated');
+            return res.json({ error: message });
+        }
+
+        try {
+            const user = await User.findByPk(userId);
+
+            if (!user) {
+                const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'User not found');
+                return res.json({ error: message });
+            }
+
+            const { target_team } = req.body;
+
+            // Se non è stato specificato target_team, errore
+            if (!target_team) {
+                const message = errorMessageFactory.createMessage(ErrorMessage.invalidFormat, 'target_team attribute not specified');
+                return res.json({ error: message });
+            }
+
+            // Se l'utente è un impiegato e specifica un team diverso dal proprio
+            if (user.role === 'impiegato' && user.team !== target_team) {
+                const message = errorMessageFactory.createMessage(
+                    ErrorMessage.notAuthorized,
+                    `Users with role "Impiegato" are not allowed to create drawings for a team other than their own.`
+                );
+                return res.json({ error: message });
+            }
+
+            return next();
+        } catch (error) {
+            const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Internal server error');
+            return res.json({ error: message });
+        }
+    }
+
 }
 
 export default new permissionMiddleware();
