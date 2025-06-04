@@ -45,6 +45,7 @@ class permissionMiddleware{
         };
     }
 
+    // Se l'utente fa parte dello stesso team della risorsa o se ne è il proprietario fa passare
     async checkTeam(req: Request, res: Response, next: NextFunction) {
         const userId = req.headers['x-user-id'];  // Ottieni l'ID dell'utente dal header
         const userIdAsNumber = Number(userId); // lo trasformo in number
@@ -79,7 +80,8 @@ class permissionMiddleware{
                 return res.json({ error: message });
             }
 
-            // Verifica se il team dell'utente corrisponde al team del proprietario del disegno, Consenti se l'utente è il proprietario, anche se il team è diverso
+            // Verifica se il team dell'utente corrisponde al team del proprietario del disegno. 
+            // Consente anche se l'utente ne è il proprietario, anche se il team è diverso
             if (user.id !== drawing.owner_id && user.team !== drawing.target_team) {
                 const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Forbidden: You are not in the same team as the drawing owner');
                 return res.json({ error: message });
@@ -93,6 +95,7 @@ class permissionMiddleware{
         }
     }
 
+    // controlla se l'utente può creare un drawing in un team diverso dal proprio
     checkTargetTeam = async (req: Request, res: Response, next: NextFunction) => {
         const userId = Number(req.headers['x-user-id']);
         if (isNaN(userId)) {
