@@ -2,16 +2,16 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends snort iproute2 iputils-ping curl && \
+    apt-get install -y --no-install-recommends \
+        snort libdaq2 iproute2 iputils-ping curl && \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /etc/snort/rules /var/log/snort && \
-    echo 'include $RULE_PATH/local.rules' >> /etc/snort/snort.conf
+# directory log
+RUN mkdir -p /var/log/snort
 
-# Copia il file local.rules dentro il container
+# OPTIONAL: regole personalizzate
 COPY local.rules /etc/snort/rules/local.rules
+RUN sed -i 's|^var RULE_PATH .*|var RULE_PATH /etc/snort/rules|' /etc/snort/snort.conf
 
-# Imposta la variabile RULE_PATH 
-ENV RULE_PATH=/etc/snort/rules
-
-CMD ["snort","--daq","pcap","-i","eth0","-A","fast","-l","/var/log/snort","-c","/etc/snort/snort.conf","-k","none"]
+# *** RIMOZIONE della riga che forza il DAQ (se presente) ***
+RUN sed -i '/^config daq/d' /etc/snort/snort.conf

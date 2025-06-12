@@ -1,5 +1,5 @@
 FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y squid iptables && \
+RUN apt-get update && apt-get install -y squid iptables iproute2 iputils-ping && \
     # directory PID + log 
     mkdir -p /run/squid /var/log/squid && \
     chown -R 13:13 /run/squid /var/log/squid && \
@@ -11,5 +11,5 @@ ENTRYPOINT ["/entrypoint.sh"]
 RUN mkdir -p /run/squid && chown proxy:proxy /run/squid
 
 COPY squid.conf /etc/squid/squid.conf
-USER proxy
+#USER proxy
 CMD ["squid","-N","-f","/etc/squid/squid.conf","-n","squid"]

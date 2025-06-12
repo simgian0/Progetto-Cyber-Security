@@ -1,0 +1,8 @@
+FROM alpine:3.20
+
+# installa il pacchetto unico e punta di default al backend nft
+RUN apk add --no-cache iptables ip6tables \
+    && ln -sf /usr/sbin/iptables-nft   /usr/sbin/iptables \
+    && ln -sf /usr/sbin/ip6tables-nft  /usr/sbin/ip6tables
+
+CMD ["/bin/sh", "/firewall.sh"]

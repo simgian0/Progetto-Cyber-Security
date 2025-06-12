@@ -6,9 +6,13 @@ import os
 import time
 import requests
 
+<<<<<<< Updated upstream
 BASE_URL = os.getenv("SERVER_URL", "http://server:8000")
 # endpoints to hit – some valid, one intentionally invalid to show 404
 ENDPOINTS = ["/", "/db-check", "/db-check", "/not-found"]
+=======
+BASE_URL = os.getenv("SERVER_URL", "http://192.168.102.2:8000")
+>>>>>>> Stashed changes
 
 for path in ENDPOINTS:
     url = f"{BASE_URL}{path}"

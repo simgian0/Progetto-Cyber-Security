@@ -4,6 +4,7 @@ FROM python:3.11-slim
 WORKDIR /app
 COPY . /app
 
-RUN pip install requests
+RUN apt-get update && apt-get install -y iproute2 iputils-ping curl netcat && rm -rf /var/lib/apt/lists/*
+RUN pip install requests 
 
 CMD ["python", "client.py"]

@@ -13,12 +13,18 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./server/db/db.sql:/docker-entrypoint-initdb.d/db.sql
     networks:
-      - app-network
+      server_net:
+        ipv4_address: 192.168.102.3
 
   server:
+    build: ./server_express
+    container_name: server
+    cap_add:
+      - NET_ADMIN
     build: ./server
     depends_on:
       - db
+      - firewall
     environment:
       DB_HOST: db
       DB_NAME: mydb
@@ -27,26 +33,48 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - app-network
+      server_net:
+        ipv4_address: 192.168.102.2
+    entrypoint: ["/bin/sh", "-c", "ip route replace default via 192.168.102.254 && exec node ./dist/app.js"]    
 
   client:
     build: ./client
     depends_on:
       - server
+      - firewall
+    container_name: client  
     networks:
-      - app-network
+      client_net:
+        ipv4_address: 192.168.101.2
+    cap_add:
+      - NET_ADMIN    
+    entrypoint: ["/bin/sh", "-c", "ip route replace default via 192.168.101.254 && exec python -u client.py"]
     environment:
-      HTTP_PROXY:  http://squid:3128
-      HTTPS_PROXY: http://squid:3128  
+      HTTP_PROXY:  http://192.168.103.2:3128
+      HTTPS_PROXY: http://192.168.103.2:3128
   snort:
     build: ./snort
-    network_mode: "service:squid"  # Snort “sniffa” sull’interfaccia di Squid
-    cap_add: [ NET_ADMIN ]
+    platform: linux/amd64  
+    networks:
+      client_net:
+        ipv4_address: 192.168.101.10
+      server_net:
+        ipv4_address: 192.168.102.10
+      squid_net:
+        ipv4_address: 192.168.103.10
+    cap_add: [ NET_ADMIN, NET_RAW ]
+    command: >
+      snort -i any
+            -A fast
+            -c /etc/snort/snort.conf
+            -l /var/log/snort
     volumes:
       - snort-logs:/var/log/snort
+
   squid:
     platform: linux/amd64
     build: ./squid
+    privileged: true
     cap_add:
       - NET_ADMIN
     container_name: squid
@@ -54,8 +82,31 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
-    user: "13:13"  
-    networks: [ app-network ]
+    #user: "13:13"  
+    networks:
+      squid_net:
+        ipv4_address: 192.168.103.2
+    depends_on:
+      - firewall
+    entrypoint: ["/bin/sh", "-c", "ip route replace default via 192.168.103.254 && exec squid -N -f /etc/squid/squid.conf -n squid"]
+
+  firewall:
+    build:
+      context: .
+      dockerfile: dockerfile.firewall
+    container_name: firewall
+    privileged: true
+    networks:
+      client_net:
+        ipv4_address: 192.168.101.254
+      server_net:
+        ipv4_address: 192.168.102.254
+      squid_net:
+        ipv4_address: 192.168.103.254
+    volumes:
+      - ./firewall.sh:/firewall.sh:ro
+    command: ["/bin/sh", "/firewall.sh"]
+
 
   splunk:
     platform: linux/amd64
@@ -72,13 +123,15 @@ services:
       SPLUNK_START_ARGS: "--accept-license"
       SPLUNK_PASSWORD: Chang3d!
       # abilita HEC automaticamente (facoltativo)
-      SPLUNK_HEC_TOKEN:  ENABLED             # ne genera uno
+      SPLUNK_HEC_TOKEN:  18750b35-4911-4f0b-8ddb-52e5ea075a26             # ne genera uno
       SPLUNK_HEC_ENABLE: "true"   
       SPLUNK_HEC_PORT: 8088
     # persistenza dei dati Splunk
     volumes:
       - splunk-data:/opt/splunk/var
-    networks: [ app-network ]
+    networks:
+      macvlan_net:
+        ipv4_address: 192.168.100.8
   fluentbit:
     image: fluent/fluent-bit:2.1
     container_name: fluentbit
@@ -88,8 +141,10 @@ services:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./squid/logs:/var/log/squid:ro
       - snort-logs:/var/log/snort:ro
+      - /run/ulogd:/run/ulogd:ro 
     networks:
-      - app-network
+      macvlan_net:
+        ipv4_address: 192.168.100.9
 
 volumes:
   db-data:
@@ -97,8 +152,11 @@ volumes:
   uf-var:
   snort-logs:
 networks:
-  app-network:
-    driver: bridge
-    driver_opts:
-      com.docker.network.enable_ipv4: "true"
-      com.docker.network.enable_ipv6: "false"
+  client_net:
+    external: true
+  server_net:
+    external: true
+  squid_net:
+    external: true
+  macvlan_net:
+    external: true
