@@ -1,9 +1,8 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   db:
     image: postgres:15
-    container_name: database
     environment:
       POSTGRES_DB: mydb
       POSTGRES_USER: user
@@ -32,13 +31,8 @@ services:
 
   client:
     build: ./client
-    container_name: client
     depends_on:
-    - server
-    - squid
-    environment:
-    - http_proxy=http://squid:3128
-    - https_proxy=http://squid:3128
+      - server
     networks:
       - app-network
     environment:
@@ -60,6 +54,7 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
+      - ./squid/errors:/usr/share/squid/errors
     user: "13:13"  
     networks: [ app-network ]
 
@@ -78,7 +73,7 @@ services:
       SPLUNK_START_ARGS: "--accept-license"
       SPLUNK_PASSWORD: Chang3d!
       # abilita HEC automaticamente (facoltativo)
-      SPLUNK_HEC_TOKEN:  ENABLED             # ne genera uno
+      SPLUNK_HEC_TOKEN:  e30d11ee-6b88-4873-a988-fda21b9bce54             # ne genera uno
       SPLUNK_HEC_ENABLE: "true"   
       SPLUNK_HEC_PORT: 8088
     # persistenza dei dati Splunk
