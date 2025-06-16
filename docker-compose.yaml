@@ -54,6 +54,7 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
+      - ./squid/errors:/usr/share/squid/errors
     user: "13:13"  
     networks: [ app-network ]
 

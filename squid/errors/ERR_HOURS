@@ -1,0 +1,6 @@
+<!-- ERR_HOURS -->
+<HTML><HEAD><TITLE>Accesso fuori orario</TITLE></HEAD>
+<BODY>
+<H1>403 - Accesso negato</H1>
+<P>Puoi accedere solo dalle 09:00 alle 18:00, dal lunedì al venerdì.</P>
+</BODY></HTML>
