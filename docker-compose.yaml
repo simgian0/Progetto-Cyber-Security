@@ -12,13 +12,12 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./server/db/db.sql:/docker-entrypoint-initdb.d/db.sql
+      - ./server_express/src/database/db.sql:/docker-entrypoint-initdb.d/db.sql
     networks:
       - app-network
 
   server:
-    build: ./server
-    container_name: server
+    build: ./server_express
     depends_on:
       - db
     environment:
@@ -41,27 +40,71 @@ services:
     - http_proxy=http://squid:3128
     - https_proxy=http://squid:3128
     networks:
-    - app-network
+      - app-network
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128  
   snort:
     build: ./snort
-    container_name: snort
-    cap_add:
-    - NET_ADMIN
-    network_mode: "host"
-    tty: true    
+    network_mode: "service:squid"  # Snort “sniffa” sull’interfaccia di Squid
+    cap_add: [ NET_ADMIN ]
+    volumes:
+      - snort-logs:/var/log/snort
   squid:
+    platform: linux/amd64
     build: ./squid
+    cap_add:
+      - NET_ADMIN
     container_name: squid
-    networks:
-      - app-network
-    ports:
-      - "3128:3128" # proxy in uscita
+    ports: [ "3128:3128" ]
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
+    user: "13:13"  
+    networks: [ app-network ]
+
+  splunk:
+    platform: linux/amd64
+    image: splunk/splunk:9.4.2        # tag x86-64 disponibile su Docker Hub
+    container_name: splunk
+    restart: unless-stopped
+    ports:
+      - "18100:8000"   # GUI
+      - "8088:8088"   # HEC (HTTP Event Collector)
+      - "8089:8089"   # Management (usato da UF)
+      - "9997:9997"   # Splunk Forwarder (usato da UF)
+    environment:
+      TZ: Europe/Rome
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: Chang3d!
+      # abilita HEC automaticamente (facoltativo)
+      SPLUNK_HEC_TOKEN:  ENABLED             # ne genera uno
+      SPLUNK_HEC_ENABLE: "true"   
+      SPLUNK_HEC_PORT: 8088
+    # persistenza dei dati Splunk
+    volumes:
+      - splunk-data:/opt/splunk/var
+    networks: [ app-network ]
+  fluentbit:
+    image: fluent/fluent-bit:2.1
+    container_name: fluentbit
+    depends_on:
+      - splunk
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./squid/logs:/var/log/squid:ro
+      - snort-logs:/var/log/snort:ro
+    networks:
+      - app-network
+
 volumes:
   db-data:
-
+  splunk-data:
+  uf-var:
+  snort-logs:
 networks:
   app-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"
+      com.docker.network.enable_ipv6: "false"

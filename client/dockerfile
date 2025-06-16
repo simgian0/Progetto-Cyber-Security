@@ -6,4 +6,4 @@ COPY . /app
 
 RUN pip install requests && apt update && apt install curl -y
 
-CMD ["python", "client.py"]
+CMD ["python", "-u", "client.py"]
