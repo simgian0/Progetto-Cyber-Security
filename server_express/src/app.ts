@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { Database } from "./database/database";
 import { Sequelize } from "sequelize";
+import { splunkLogger } from './middleware/splunkLogger';
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
@@ -27,6 +28,12 @@ connectDB();
 // Middleware to parse JSON and URL-encoded request bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// TO DO: Middleware Controllo fiducia richiesta
+
+
+// Middleware Splunk TO DO: mettere alla fine delle routes
+app.use(splunkLogger);
 
 // Use the routes defined in the routes file
 app.use(router);

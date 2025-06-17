@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 import Drawing from '../models/Drawing';
-// //Import factory
+// Import factory
 import { errorFactory } from "../factory/FailMessage";
 import { ErrorMessage } from "../factory/Messages";
 // Instantiate the error message factory
