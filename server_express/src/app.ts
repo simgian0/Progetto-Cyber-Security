@@ -32,7 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 // TO DO: Middleware Controllo fiducia richiesta
 
 
-// Middleware Splunk TO DO: mettere alla fine delle routes
+// Middleware Splunk
 app.use(splunkLogger);
 
 // Use the routes defined in the routes file

@@ -1,44 +1,41 @@
-import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 import { Request, Response, NextFunction } from 'express';
 
-const SPLUNK_HEC_URL = 'http://splunk:8088/services/collector'; // nome host nel compose TO DO: cambiare per utilizzare fluentbit
-const SPLUNK_HEC_TOKEN = '18750b35-4911-4f0b-8ddb-52e5ea075a26'; // token
+const LOG_FILE_PATH = path.join(__dirname, '../logs/server.log');
+
+// Funzione per garantire che la directory esista
+const ensureLogDirectoryExists = (filePath: string) => {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+};
 
 export const splunkLogger = async (req: Request, res: Response, next: NextFunction) => {
-    const logPayload = {
-        time: Date.now() / 1000,
-        host: 'node-server',
-        source: 'express-app',
-        event: {
-            method: req.method,
-            path: req.originalUrl,
-            headers: req.headers,
-            body: req.body,
-            user_id: req.headers['x-user-id'] || null
-        }
-    };
+    ensureLogDirectoryExists(LOG_FILE_PATH);
+    res.on('finish', () => {
+        const logPayload = {
+            time: Date.now() / 1000,
+            host: 'node-server',
+            source: 'express-app',
+            event: {
+                method: req.method,
+                path: req.originalUrl,
+                headers: req.headers,
+                body: req.body,
+                user_id: req.headers['x-user-id'] || null,
+                status: res.statusCode // Logga anche lo status della risposta
+            }
+        };
 
-    // salvare log localmente
-
-    // inviare a splunk tramite fluentbit (auto)
-
-    try {
-    await axios.post(SPLUNK_HEC_URL, {
-        event: JSON.stringify(logPayload.event), // Invia solo la parte 'event' del log
-        sourcetype: "_json" // log in formato JSON
-    }, {
-        headers: {
-            'Authorization': `Splunk ${SPLUNK_HEC_TOKEN}`, // Token di autorizzazione per HEC
-            'Content-Type': 'application/json' // Tipo di contenuto JSON
+        try {
+            fs.appendFileSync(LOG_FILE_PATH, JSON.stringify(logPayload) + '\n');
+            console.log('log inviato');
+        } catch (err) {
+            console.error('Errore scrittura log Splunk:', err);
         }
     });
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            console.error('[Splunk HEC] Logging failed:', error.message);
-        } else {
-            console.error('[Splunk HEC] Logging failed: Unknown error');
-        }
-    }
 
     next();
 };
