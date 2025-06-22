@@ -72,7 +72,7 @@ services:
       SPLUNK_START_ARGS: "--accept-license"
       SPLUNK_PASSWORD: Chang3d!
       # abilita HEC automaticamente (facoltativo)
-      SPLUNK_HEC_TOKEN:  ENABLED             # ne genera uno
+      SPLUNK_HEC_TOKEN: 18750b35-4911-4f0b-8ddb-52e5ea075a26            # ne genera uno
       SPLUNK_HEC_ENABLE: "true"   
       SPLUNK_HEC_PORT: 8088
     # persistenza dei dati Splunk
