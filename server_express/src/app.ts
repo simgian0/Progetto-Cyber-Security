@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { Database } from "./database/database";
 import { Sequelize } from "sequelize";
 import { splunkLogger } from './middleware/splunkLogger';
+import { blockListMiddleware } from './middleware/blockList';
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
@@ -31,8 +32,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // TO DO: Middleware Controllo fiducia richiesta
 
+// Middleware per bloccare IP
+app.use(blockListMiddleware);
 
-// Middleware Splunk
+// Middleware Splunk logger
 app.use(splunkLogger);
 
 // Use the routes defined in the routes file
