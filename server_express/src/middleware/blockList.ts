@@ -8,7 +8,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
 
 export const blockListMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const clientIP = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
-    // console.log(clientIP)
+    console.log("req ip: ", clientIP);
     if (!clientIP) {
     const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'IP not Found');
     return res.json({ error: message });

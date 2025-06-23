@@ -32,11 +32,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // TO DO: Middleware Controllo fiducia richiesta
 
-// Middleware per bloccare IP
-app.use(blockListMiddleware);
-
 // Middleware Splunk logger
 app.use(splunkLogger);
+
+// Middleware per bloccare IP
+app.use(blockListMiddleware);
 
 // Use the routes defined in the routes file
 app.use(router);
