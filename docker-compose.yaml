@@ -26,6 +26,8 @@ services:
       DB_PASSWORD: password
     ports:
       - "8000:8000"
+    volumes:
+      - ./server_express/src/logs:/app/logs
     networks:
       - app-network
 
@@ -87,6 +89,7 @@ services:
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./squid/logs:/var/log/squid:ro
+      - ./server_express/src/logs:/app/logs
       - snort-logs:/var/log/snort:ro
     networks:
       - app-network

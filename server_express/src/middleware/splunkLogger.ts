@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { Request, Response, NextFunction } from 'express';
 
-const LOG_FILE_PATH = path.join(__dirname, '../logs/server.log');
+const LOG_FILE_PATH = path.join('/app/logs', 'server.log');
 
 // Funzione per garantire che la directory esista
 const ensureLogDirectoryExists = (filePath: string) => {
