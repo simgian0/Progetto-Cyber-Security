@@ -14,19 +14,31 @@ const ensureLogDirectoryExists = (filePath: string) => {
 
 export const splunkLogger = async (req: Request, res: Response, next: NextFunction) => {
     ensureLogDirectoryExists(LOG_FILE_PATH);
+    const clientIP = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
+
+    let responseBody: any = null;
+
+    const originalJson = res.json.bind(res);
+    res.json = (body: any) => {
+        responseBody = body; // salva il contenuto della risposta
+        return originalJson(body); // continua normalmente
+    };
+
     res.on('finish', () => {
+        const statusFromBody =
+            responseBody?.success?.httpStatus ||
+            responseBody?.error?.httpStatus ||
+            res.statusCode;
+        
         const logPayload = {
-            time: Date.now() / 1000,
-            host: 'node-server',
-            source: 'express-app',
-            event: {
-                method: req.method,
-                path: req.originalUrl,
-                headers: req.headers,
-                body: req.body,
-                user_id: req.headers['x-user-id'] || null,
-                status: res.statusCode // Logga anche lo status della risposta
-            }
+            time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            method: req.method,
+            path: req.originalUrl,
+            headers: req.headers,
+            body: responseBody,
+            user_id: req.headers['x-user-id'] || null,
+            status: statusFromBody,
+            request_ip: clientIP
         };
 
         try {
