@@ -3,3 +3,6 @@ squid/logs/
 snort/logs/
 *.pid
 *.log
+
+# Dependency directories
+/server_express/node_modules
