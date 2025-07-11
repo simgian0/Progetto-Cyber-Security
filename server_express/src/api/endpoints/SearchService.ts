@@ -12,7 +12,13 @@ export class SearchService {
 
     //TO IMPROVE: Vedere se è meglio usare endpoint = `/services/search/jobs` con parametro exec_mode = oneshot
     const endpoint = `/services/search/jobs/export`;
-    const query = `search index=${index} (user="${userOrIp}" OR ip_address="${userOrIp}") status="${status}" | table _time,host,source,sourcetype,status,user,ip_address`;
+    const query = `
+    search index=${index}
+    | spath input=log path=user_id output=user_id
+    | spath input=log path=status output=status
+    | search user_id="${userOrIp}" status="${status}"
+    | table _time, user_id, status, log
+  `;;
 
     const params = new URLSearchParams();
     params.append('search', query);
