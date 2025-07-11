@@ -10,7 +10,8 @@ export const splunkTrustMiddleware = async (req: Request, res: Response, next: N
 
   try {
     // 1. Search logs
-    const logs = await searchService.searchLogs('squid', userOrIp, 'error');
+    const logs = await searchService.searchLogs('express', userOrIp, 'error');
+    console.log('Splunk query results:', logs)
 
     // 2. Calculate stats
     const stats = logs.results.reduce((acc: any, log: any) => {

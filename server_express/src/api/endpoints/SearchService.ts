@@ -15,9 +15,10 @@ export class SearchService {
     const query = `
     search index=${index}
     | spath input=log path=user_id output=user_id
-    | spath input=log path=status output=status
-    | search user_id="${userOrIp}" status="${status}"
-    | table _time, user_id, status, log
+    | spath input=log path=body.error output=error
+    | search user_id="${userOrIp}" error=*
+    | spath input=log path=body.error.httpStatus output=httpStatus
+    | table _time, user_id, httpStatus, log
   `;;
 
     const params = new URLSearchParams();
