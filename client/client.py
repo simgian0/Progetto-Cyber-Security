@@ -31,21 +31,36 @@ TEAM_3_CONSUL_IDS = [9, 18] # user id dei consulenti del team 3
 TEAM_4_CONSUL_IDS = [12] # user id dei consulenti del team 4
 OWNER_IDS = [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20]  # tutti i manager/impiegato
 # DRAWINGS
-EXISTING_DRAWING_IDS = list(range(1, 11))  # ID dei disegni esistenti
+EXISTING_DRAWING_IDS = list(range(1, 12))  # ID dei disegni esistenti
 TEAM_1_DRAWINGS_IDS = [1, 7, 9] # drawings id del team 1
 TEAM_2_DRAWINGS_IDS = [2, 8] # drawings id del team 2
 TEAM_3_DRAWINGS_IDS = [3, 6] # drawings id del team 3
 TEAM_4_DRAWINGS_IDS = [4, 5, 10] # drawings id del team 4
 
-def get_random_payload(modify_name_only=False):
+def get_random_payload(user_id, modify_name_only=False, random_team=False):
     if modify_name_only:
         return {
             "name": f"AutoDrawing_{random.randint(1000,9999)}"
         }
     else:
+        if random_team:
+            team = random.choice(["team_1", "team_2", "team_3", "team_4"])
+        else:
+            if user_id in ALL_TEAM_1_IDS:
+                team = "team_1"
+            elif user_id in ALL_TEAM_2_IDS:
+                team = "team_2"
+            elif user_id in ALL_TEAM_3_IDS:
+                team = "team_3"
+            elif user_id in ALL_TEAM_4_IDS:
+                team = "team_4"
+            else:
+                team = "unknown"
+
         return {
             "name": f"AutoDrawing_{random.randint(1000,9999)}",
-            "owner_id": random.choice(OWNER_IDS),
+            "owner_id": user_id,
+            "target_team": team,
             "points": '[{"x":1,"y":1,"color":"blue"}]',
             "lines": '[{"start_x":1,"start_y":1,"end_x":2,"end_y":2,"color":"black"}]',
             "texts": '[{"x":1,"y":1,"content":"AutoGen","font_size":10,"color":"gray"}]'
@@ -54,10 +69,11 @@ def get_random_payload(modify_name_only=False):
 # Sequenza predefinita per test
 TEST_SEQUENCE = [
 
-    {   "action": "POST",
+    {   
+        "action": "POST",
         "drawing_id": None,
-        "payload": lambda: get_random_payload(),  # usa funzione
-        "user_id": lambda: random.choice(OWNER_IDS) # random tra gli utenti manager e impiegati; si può cambiare con ALL_USER_IDS in quanto il server gestisce i permessi.
+        "user_id": lambda: random.choice(OWNER_IDS),
+        "payload": lambda user_id=None: get_random_payload(user_id)
     },
     {
         "action": "GET_ONE",
@@ -68,8 +84,8 @@ TEST_SEQUENCE = [
     {
         "action": "PUT",
         "drawing_id": lambda: random.choice(TEAM_2_DRAWINGS_IDS),
-        "payload": lambda: get_random_payload(modify_name_only=True),
-        "user_id": lambda: random.choice(TEAM_2_MANAGER_IDS)
+        "user_id": lambda: random.choice(TEAM_2_MANAGER_IDS),
+        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
     },
     {
         "action": "DELETE",
@@ -107,53 +123,6 @@ TEST_SEQUENCE = [
         "user_id": lambda: random.choice(TEAM_1_IMPIEG_IDS),
         "payload": lambda user_id=None: get_random_payload(user_id) # pubblica su team giusto con un impiegato
     },
-    """# ✅ Policy 1: GET deve sempre passare (anche fuori orario o da IP bloccato)
-    {
-        "action": "GET_ONE",
-        "drawing_id": lambda: 1,  # qualsiasi ID valido
-        "payload": None,
-        "user_id": lambda: 3  # consulente
-    },
-
-    # ❌ Policy 2: IP bloccato → deve essere inserito in blocklist.json → aspettati timeout
-    {
-        "action": "POST",
-        "drawing_id": None,
-        "user_id": lambda: 10,  # impiegato
-        "payload": lambda user_id=None: get_random_payload(user_id)  # qualsiasi payload valido
-    },
-
-    # ❌ Policy 3: Rete non consentita → container con IP non 172.18/19/20.x
-    {
-        "action": "PUT",
-        "drawing_id": lambda: 4,  # disegno team 4
-        "user_id": lambda: 5,     # manager team 4
-        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
-    },
-
-    # ⚠️ Policy 4: Fuori orario → lo script alert deve segnalarlo (ma non bloccare)
-    {
-        "action": "POST",
-        "drawing_id": None,
-        "user_id": lambda: 13,  # impiegato team 1
-        "payload": lambda user_id=None: get_random_payload(user_id)
-    },
-
-    # ✅ Policy 1 di nuovo (GET sempre concesso)
-    {
-        "action": "GET_ONE",
-        "drawing_id": lambda: 5,
-        "payload": None,
-        "user_id": lambda: 7
-    },
-
-    # ❌ Policy 2: IP bloccato (fai partire questa da container con IP nella blocklist)
-    {
-        "action": "DELETE",
-        "drawing_id": lambda: 3,
-        "user_id": lambda: 14,  # manager
-        "payload": None
-    },"""
 ]
 
 def run():
@@ -162,7 +131,7 @@ def run():
             action = req["action"]
             user_id = req["user_id"]() if callable(req["user_id"]) else req["user_id"]
             drawing_id = req["drawing_id"]() if callable(req["drawing_id"]) else req["drawing_id"]
-            payload = req["payload"]() if callable(req["payload"]) else req["payload"]
+            payload = req["payload"](user_id) if callable(req["payload"]) else req["payload"]
 
             print(f"\n - {action} da user {user_id}")
             headers = {"X-User-ID": str(user_id)}  # gestisce il server (come se user_id fosse l'utente autenticato)
