@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y squid iptables && \
     chown -R 13:13 /run/squid /var/log/squid && \
     rm -rf /var/lib/apt/lists/*
 COPY entrypoint.sh /entrypoint.sh
+RUN ls -l /entrypoint.sh && head -n 5 /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 USER root
 ENTRYPOINT ["/entrypoint.sh"]    

@@ -53,8 +53,8 @@ def get_random_payload(modify_name_only=False):
 
 # Sequenza predefinita per test
 TEST_SEQUENCE = [
-    {
-        "action": "POST",
+
+    {   "action": "POST",
         "drawing_id": None,
         "payload": lambda: get_random_payload(),  # usa funzione
         "user_id": lambda: random.choice(OWNER_IDS) # random tra gli utenti manager e impiegati; si può cambiare con ALL_USER_IDS in quanto il server gestisce i permessi.
@@ -77,6 +77,83 @@ TEST_SEQUENCE = [
         "payload": None,
         "user_id": lambda: random.choice(TEAM_3_IMPIEG_IDS)
     },
+    {
+        "action": "PUT",
+        "drawing_id": 11, # test per checkTeam
+        "user_id": 1, # 1 fa parte dello stesso team quindi può accedervi
+        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
+    },
+    {
+        "action": "PUT",
+        "drawing_id": 11, # test per checkTeam
+        "user_id": 2, # il 2 è l'owner quindi può accedervi
+        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
+    },
+    {
+        "action": "PUT",
+        "drawing_id": 11, # test per checkTeam
+        "user_id": 4, # user 4 fa parte del team_3 quindi non può accedere
+        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
+    },
+    {
+        "action": "POST",
+        "drawing_id": None,
+        "user_id": lambda: random.choice(TEAM_1_IMPIEG_IDS),
+        "payload": lambda user_id=None: get_random_payload(user_id, random_team=True) # pubblica su team casuali con un impiegato
+    },
+    {
+        "action": "POST",
+        "drawing_id": None,
+        "user_id": lambda: random.choice(TEAM_1_IMPIEG_IDS),
+        "payload": lambda user_id=None: get_random_payload(user_id) # pubblica su team giusto con un impiegato
+    },
+    """# ✅ Policy 1: GET deve sempre passare (anche fuori orario o da IP bloccato)
+    {
+        "action": "GET_ONE",
+        "drawing_id": lambda: 1,  # qualsiasi ID valido
+        "payload": None,
+        "user_id": lambda: 3  # consulente
+    },
+
+    # ❌ Policy 2: IP bloccato → deve essere inserito in blocklist.json → aspettati timeout
+    {
+        "action": "POST",
+        "drawing_id": None,
+        "user_id": lambda: 10,  # impiegato
+        "payload": lambda user_id=None: get_random_payload(user_id)  # qualsiasi payload valido
+    },
+
+    # ❌ Policy 3: Rete non consentita → container con IP non 172.18/19/20.x
+    {
+        "action": "PUT",
+        "drawing_id": lambda: 4,  # disegno team 4
+        "user_id": lambda: 5,     # manager team 4
+        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
+    },
+
+    # ⚠️ Policy 4: Fuori orario → lo script alert deve segnalarlo (ma non bloccare)
+    {
+        "action": "POST",
+        "drawing_id": None,
+        "user_id": lambda: 13,  # impiegato team 1
+        "payload": lambda user_id=None: get_random_payload(user_id)
+    },
+
+    # ✅ Policy 1 di nuovo (GET sempre concesso)
+    {
+        "action": "GET_ONE",
+        "drawing_id": lambda: 5,
+        "payload": None,
+        "user_id": lambda: 7
+    },
+
+    # ❌ Policy 2: IP bloccato (fai partire questa da container con IP nella blocklist)
+    {
+        "action": "DELETE",
+        "drawing_id": lambda: 3,
+        "user_id": lambda: 14,  # manager
+        "payload": None
+    },"""
 ]
 
 def run():
