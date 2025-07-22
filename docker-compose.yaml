@@ -30,22 +30,34 @@ services:
       - ./server_express/src/logs:/app/logs
     networks:
       - app-network
+      - wifi
 
-  client:
-    build: ./client
+  client_1:
+    build: ./clients/client_1
     depends_on:
       - server
     networks:
       - app-network
     environment:
       HTTP_PROXY:  http://squid:3128
-      HTTPS_PROXY: http://squid:3128  
+      HTTPS_PROXY: http://squid:3128
+  client_2:
+    build: ./clients/client_2
+    networks:
+      - wifi
+    depends_on:
+      - server
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  
   snort:
     build: ./snort
     network_mode: "service:squid"  # Snort “sniffa” sull’interfaccia di Squid
     cap_add: [ NET_ADMIN ]
     volumes:
       - snort-logs:/var/log/snort
+
   squid:
     platform: linux/amd64
     build: ./squid
@@ -57,7 +69,9 @@ services:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
     user: "13:13"  
-    networks: [ app-network ]
+    networks:
+      - app-network
+      - wifi
 
   splunk:
     platform: linux/amd64
@@ -105,3 +119,5 @@ networks:
     driver_opts:
       com.docker.network.enable_ipv4: "true"
       com.docker.network.enable_ipv6: "false"
+  wifi:
+    driver: bridge

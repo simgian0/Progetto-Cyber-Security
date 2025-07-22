@@ -14,7 +14,8 @@ const ensureLogDirectoryExists = (filePath: string) => {
 
 export const splunkLogger = async (req: Request, res: Response, next: NextFunction) => {
     ensureLogDirectoryExists(LOG_FILE_PATH);
-    const clientIP = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || '';
 
     let responseBody: any = null;
 

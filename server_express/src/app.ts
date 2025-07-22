@@ -30,7 +30,8 @@ connectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// TO DO: Middleware Controllo fiducia richiesta
+// serve per mantenere x-forwarded-for
+app.set('trust proxy', true);
 
 // Middleware Splunk logger
 app.use(splunkLogger);
