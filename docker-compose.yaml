@@ -43,10 +43,28 @@ services:
       HTTPS_PROXY: http://squid:3128
   client_2:
     build: ./clients/client_2
-    networks:
-      - wifi
     depends_on:
       - server
+    networks:
+      - app-network
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  client_3:
+    build: ./clients/client_3
+    depends_on:
+      - server
+    networks:
+      - wifi
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  client_4:
+    build: ./clients/client_4
+    depends_on:
+      - server
+    networks:
+      - wifi
     environment:
       HTTP_PROXY:  http://squid:3128
       HTTPS_PROXY: http://squid:3128
