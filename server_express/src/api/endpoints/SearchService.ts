@@ -14,11 +14,11 @@ export class SearchService {
     const endpoint = `/services/search/jobs/export`;
     const query = `
     search index=${index}
-    | spath input=log path=user_id output=user_id
-    | spath input=log path=body.error output=error
-    | search user_id="${userOrIp}" error=*
-    | spath input=log path=body.error.httpStatus output=httpStatus
-    | table _time, user_id, httpStatus, log
+    | spath input=log path=request_ip output=request_ip
+    | spath input=log path=type output=type
+    | spath input=log path=status output=status
+    | search request_ip"${userOrIp}" type"${status}"
+    | table _time, request_ip, status
   `;;
 
     const params = new URLSearchParams();
@@ -27,4 +27,22 @@ export class SearchService {
 
     return this.apiClient.callAPI('POST', endpoint, params);
   }
+
+  async searchStatusByIp(index: string, ip: string) {
+  const endpoint = '/services/search/jobs/export';
+  const query = `
+    search index=${index} earliest=-1h
+    | spath input=log path=request_ip output=request_ip
+    | spath input=log path=status output=status
+    | search request_ip="${ip}"
+    | stats count by status
+  `;
+
+  const params = new URLSearchParams();
+  params.append('search', query);
+  params.append('output_mode', 'json');
+
+  return this.apiClient.callAPI('POST', endpoint, params);
+}
+
 }
