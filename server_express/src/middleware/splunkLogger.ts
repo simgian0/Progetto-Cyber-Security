@@ -29,6 +29,10 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
             responseBody?.success?.httpStatus ||
             responseBody?.error?.httpStatus ||
             res.statusCode;
+        console.log('DEBUG: res.statusCode =', res.statusCode, 'statusFromBody =', statusFromBody, 'responseBody =',responseBody);
+
+       const numericStatus = parseInt(statusFromBody, 10);
+    const type = numericStatus >= 400 ? 'error' : 'normal';
         
         const logPayload = {
             time: new Date().toISOString().replace('T', ' ').substring(0, 19),
@@ -38,7 +42,8 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
             body: responseBody,
             user_id: req.headers['x-user-id'] || null,
             status: statusFromBody,
-            request_ip: clientIP
+            request_ip: clientIP,
+            type: type 
         };
 
         try {
