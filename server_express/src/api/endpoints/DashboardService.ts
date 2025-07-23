@@ -2,6 +2,8 @@ import { SplunkAPIClient } from '../SplunkAPIClient';
 
 export class DashboardService {
   private apiClient: SplunkAPIClient;
+  private static dashboardCreated: boolean = false;
+  static increasedNumberforName: number = 1;
 
   constructor() {
     this.apiClient = new SplunkAPIClient();
@@ -12,9 +14,24 @@ export class DashboardService {
     const params = new URLSearchParams();
     params.append('name', dashboardName);
     params.append('eai:data', xml);
-    params.append('isVisible', '1');
-    params.append('label', dashboardName);
+    //params.append('isVisible', '1');
+    //params.append('label', dashboardName);
 
     return this.apiClient.callAPI('POST', endpoint, params);
   }
+
+  //Funzione che fa da switch e mi indica se ho inizializzato la struttura della dashboard per la prima volta
+  switchdashboardCreated(){
+    DashboardService.dashboardCreated = true
+  }
+
+  getdashboardCreated(){
+    return DashboardService.dashboardCreated
+  }
+
+  increaseNumber(){
+    DashboardService.increasedNumberforName =  DashboardService.increasedNumberforName + 1;
+  }
+
+  
 }

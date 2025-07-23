@@ -26,8 +26,8 @@ const errorMessageFactory: errorFactory = new errorFactory();
 
   try {
     // 1. Search logs
-    const logs = await searchService.searchLogs('express', Ip, 'error'); //La risposta di Splunk REST API /export è una stringa di JSON Lines (oggetti JSON separati da \n)
-    console.log('SPLUNK QUERY: Splunk query results:',typeof logs, logs)
+    const logs = await searchService.searchLogs('express', Ip, '*'); //La risposta di Splunk REST API /export è una stringa di JSON Lines (oggetti JSON separati da \n)
+    //console.log('SPLUNK QUERY: Splunk query results:',typeof logs, logs)
 
     // 2. Parse JSON lines string ➔ array
     const logsArray = typeof logs === 'string'
@@ -41,7 +41,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
    console.log('Parsed results sample:', parsedResults.slice(0,3));
 
     console.log('SPLUNK QUERY PARSED ARRAY LENGTH:', parsedResults.length);
-    console.log('First parsed entry:', parsedResults[0]);
+    //console.log('First parsed entry:', parsedResults[0]);
 
     // 2. Calculate stats
    const stats = parsedResults.reduce((acc, entry) => {
@@ -52,23 +52,82 @@ const errorMessageFactory: errorFactory = new errorFactory();
    console.log(`Error stats for ${Ip}:`, stats);
 
     // 3. Create dashboard
-    const dashboardXML = `
-<dashboard>
-  <label>User ${Ip} Error Stats</label>
+    console.log("PRIMA DI CREARE DASHBOARD DASHBOARDCREATED E': ", dashboardService.getdashboardCreated());
+    console.log("PRIMA DI CREARE DASHBOARD NUMBERFORNAME E': ", DashboardService.increasedNumberforName);
+    
+    if (!dashboardService.getdashboardCreated()) {
+   
+
+    dashboardService.switchdashboardCreated();
+    dashboardService.increaseNumber();
+    console.log("dashboardNumberName = ", DashboardService.increasedNumberforName)
+
+    const dashboardXML1 = `<dashboard>
+  <label>_Tipologie di Richieste per Utente_</label>
+  <description>Quantità e tipologie di richieste fatte dall'ip ${Ip}</description>
+  
   <row>
     <panel>
-      <title>Error Counts</title>
+      <title>Distribuzione richieste per stato HTTP</title>
       <chart>
-        <searchString>search index=squid (user="${Ip}" OR ip_address="${Ip}") status="error" | stats count by status</searchString>
-        <option name="charting.chart">pie</option>
+        <search>
+          <query>
+            index=express
+            | spath input=log path=request_ip output=request_ip
+            | spath input=log path=type output=type
+            | spath input=log path=status output=status
+            | search request_ip="${Ip}" type="*"
+            | stats count by status
+          </query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleX.text">Stato HTTP</option>
+        <option name="charting.axisTitleY.text">Conteggio</option>
+        <option name="charting.legend.placement">right</option>
       </chart>
     </panel>
   </row>
-</dashboard>
-    `;
+  
+  <row>
+    <panel>
+      <title>Dettaglio numerico</title>
+      <table>
+        <search>
+          <query>
+            index=express
+            | spath input=log path=request_ip output=request_ip
+            | spath input=log path=type output=type
+            | spath input=log path=status output=status
+            | search request_ip="${Ip}" type="*"
+            | stats count by status
+            | sort -count
+          </query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>`
+    console.log("INVIO RICHIESTA API PER DASHBOARD....\n")
 
-    await dashboardService.createDashboard('admin', 'search', `user_${Ip}_errors`, dashboardXML);
-
+    await dashboardService.createDashboard('admin', 'search', `user_${DashboardService.increasedNumberforName}_errors`, dashboardXML1);
+    
+    
+    };
+    console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED E': ", dashboardService.getdashboardCreated());
+    console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED E': ", DashboardService.increasedNumberforName);
     // Inietta stats per PDP
     (req as any).errorStats = stats;
 
