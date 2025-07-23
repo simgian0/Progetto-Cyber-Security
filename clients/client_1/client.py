@@ -66,61 +66,31 @@ def get_random_payload(user_id, modify_name_only=False, random_team=False):
             "texts": '[{"x":1,"y":1,"content":"AutoGen","font_size":10,"color":"gray"}]'
         }
 
-# Sequenza predefinita per test
+# Sequenza user 11. tutta giusta
 TEST_SEQUENCE = [
     {
         "action": "POST",
         "drawing_id": None,
-        "user_id": lambda: random.choice(OWNER_IDS),
-        "payload": lambda user_id=None: get_random_payload(user_id)
+        "user_id": 11,
+        "payload": lambda user_id=None: get_random_payload(user_id, random_team=True)
     },
     {
         "action": "GET_ONE",
         "drawing_id": lambda: random.choice(TEAM_1_DRAWINGS_IDS),
         "payload": None,
-        "user_id": lambda: random.choice(TEAM_1_CONSUL_IDS)
+        "user_id": 11
     },
     {
         "action": "PUT",
         "drawing_id": lambda: random.choice(TEAM_2_DRAWINGS_IDS),
-        "user_id": lambda: random.choice(TEAM_2_MANAGER_IDS),
+        "user_id": 11,
         "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
     },
     {
         "action": "DELETE",
-        "drawing_id": lambda: random.choice(TEAM_3_DRAWINGS_IDS),
+        "drawing_id": lambda: random.choice(TEAM_2_DRAWINGS_IDS),
         "payload": None,
-        "user_id": lambda: random.choice(TEAM_3_IMPIEG_IDS)
-    },
-    {
-        "action": "PUT",
-        "drawing_id": 11, # test per checkTeam
-        "user_id": 1, # 1 fa parte dello stesso team quindi può accedervi
-        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
-    },
-    {
-        "action": "PUT",
-        "drawing_id": 11, # test per checkTeam
-        "user_id": 2, # il 2 è l'owner quindi può accedervi
-        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
-    },
-    {
-        "action": "PUT",
-        "drawing_id": 11, # test per checkTeam
-        "user_id": 4, # user 4 fa parte del team_3 quindi non può accedere
-        "payload": lambda user_id=None: get_random_payload(user_id, modify_name_only=True)
-    },
-    {
-        "action": "POST",
-        "drawing_id": None,
-        "user_id": lambda: random.choice(TEAM_1_IMPIEG_IDS),
-        "payload": lambda user_id=None: get_random_payload(user_id, random_team=True) # pubblica su team casuali con un impiegato
-    },
-    {
-        "action": "POST",
-        "drawing_id": None,
-        "user_id": lambda: random.choice(TEAM_1_IMPIEG_IDS),
-        "payload": lambda user_id=None: get_random_payload(user_id) # pubblica su team giusto con un impiegato
+        "user_id": 11
     }
 ]
 
