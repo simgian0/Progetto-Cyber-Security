@@ -14,8 +14,7 @@ export class DashboardService {
     const params = new URLSearchParams();
     params.append('name', dashboardName);
     params.append('eai:data', xml);
-    //params.append('isVisible', '1');
-    //params.append('label', dashboardName);
+    
 
     return this.apiClient.callAPI('POST', endpoint, params);
   }

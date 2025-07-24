@@ -122,7 +122,8 @@ const errorMessageFactory: errorFactory = new errorFactory();
 </dashboard>`
     console.log("INVIO RICHIESTA API PER DASHBOARD....\n")
 
-    await dashboardService.createDashboard('admin', 'search', `user_${DashboardService.increasedNumberforName}_errors`, dashboardXML1);
+    await dashboardService.createDashboard('admin', 'search', `IP_${Ip.replace(/\./g, '_')}_requests`, dashboardXML1); //Splunk non vuole punti nel nome della dashboard, per questo sostituiti con underscore
+    //await dashboardService.createDashboard('admin', 'search', `user_${DashboardService.increasedNumberforName}_errors`, dashboardXML1);
     
     
     };
@@ -133,10 +134,17 @@ const errorMessageFactory: errorFactory = new errorFactory();
 
     next();
 
-  } catch (error) {
-    console.error('Splunk middleware error:', error);
+  } catch (error: any) {
+    console.error(`Splunk middleware error: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
+     if (error.response) {
+        console.error(`Status: ${error.response.status}`);
+     }
     //res.status(500).json({ error: 'Internal server error during Splunk processing' });
-    next(); // continua senza bloccare la request in caso fallisca
+    next({
+        message: error.message,
+        code: error.code,
+        status: error.response?.status || 500
+    }); // continua senza bloccare la request in caso fallisca
   }
 };
 
