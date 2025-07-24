@@ -6,6 +6,8 @@ import { blockListMiddleware } from './middleware/blockList';
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
+import  {generalRequestStatusforIP}  from "./middleware/splunkQueryLog";
+import { statusforAllIP } from './middleware/splunkQueryLog';
 dotenv.config();
 
 const app = express();
@@ -36,8 +38,12 @@ app.set('trust proxy', true);
 // Middleware Splunk logger
 app.use(splunkLogger);
 
+
+
 // Middleware per bloccare IP
 app.use(blockListMiddleware);
+
+app.use(generalRequestStatusforIP);
 
 // Use the routes defined in the routes file
 app.use(router);
