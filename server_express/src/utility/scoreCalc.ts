@@ -23,8 +23,8 @@ export function calculateScore(score: number, operation: string, value: number):
     }
 
     // Impostare il risultato ai limiti se è minore di 0 o maggiore di 100
-    if (result < 0) {
-        result = 0;
+    if (result == null || result <= 0) {
+        result = 1;
     } else if (result > 100) {
         result = 100;
     }

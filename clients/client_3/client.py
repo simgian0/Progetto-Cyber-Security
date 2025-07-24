@@ -75,12 +75,6 @@ TEST_SEQUENCE = [
         "payload": lambda user_id=None: get_random_payload(user_id)
     },
     {
-        "action": "GET_ONE",
-        "drawing_id": lambda: random.choice(EXISTING_DRAWING_IDS),
-        "payload": None,
-        "user_id": 18
-    },
-    {
         "action": "PUT", # non permesso
         "drawing_id": lambda: random.choice(TEAM_3_DRAWINGS_IDS),
         "user_id": 18,
