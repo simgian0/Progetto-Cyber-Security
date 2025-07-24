@@ -61,7 +61,7 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
             fs.appendFileSync(LOG_FILE_PATH, JSON.stringify(logPayload) + '\n');
             fs.appendFileSync(SCORE_LOG_FILE_PATH, JSON.stringify(scoreLogPayload) + '\n');
             console.log('log inviato');
-            console.log('SCORE --------------------------- ', clientIP, ': ', req.body.score);
+            console.log('SCORE FINALE --------------------------- ', clientIP, ': ', req.body.score);
         } catch (err) {
             console.error('Errore scrittura log Splunk:', err);
         }

@@ -17,19 +17,22 @@ export const scoreCheckMiddleware = async (req: Request, res: Response, next: Ne
             const message = errorMessageFactory.createMessage(ErrorMessage.missingParameters, 'Missing ip');
             return res.json({ error: message });
         }
-        
+
         const result = await searchService.searchScore(ip);
+        console.log("-------------------------------- result", result);
+        // Estrarre il punteggio dal risultato
+        const score = result.result?.score;
+        console.log("-------------------------------- parsed", score);
 
         // Controlla se è stato trovato un risultato
-        if (result && result.length > 0) {
+        if (result && !isNaN(score)) {
             // Se trovato, estrai lo score dal risultato e passa al middleware successivo
-            const score = result[0].score || 50; // 50 di default se non esiste lo score
             req.body.score = score; // Passa lo score al body della request per usarlo nei middleware successivi
         } else {
             // Se non trovato, imposta lo score di default
             req.body.score = 50;
+            console.log('SCORE default --------------------------- ', req.body.score);
         }
-
         // Passa al middleware successivo
         next();
     } catch (error) {

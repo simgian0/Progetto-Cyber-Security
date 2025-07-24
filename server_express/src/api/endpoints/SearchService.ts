@@ -50,10 +50,13 @@ export class SearchService {
         const query = `
             search index=score
             | spath input=log path=request_ip output=request_ip
+            | spath input=log path=score output=score
             | search request_ip="${ip}"
+            | where isnotnull(score) AND score != ""
             | spath input=log path=time output=time
             | sort -time
             | head 1
+            | table time, score, request_ip
         `;
 
         const params = new URLSearchParams();
