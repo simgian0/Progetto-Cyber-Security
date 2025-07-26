@@ -54,7 +54,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
     // 3. Create dashboard
     console.log("PRIMA DI CREARE DASHBOARD DASHBOARDCREATED E': ", dashboardService.getdashboardCreated());
     console.log("PRIMA DI CREARE DASHBOARD NUMBERFORNAME E': ", DashboardService.increasedNumberforName);
-    
+
     if (!dashboardService.getdashboardCreated()) {
    
 
@@ -63,8 +63,8 @@ const errorMessageFactory: errorFactory = new errorFactory();
     console.log("dashboardNumberName = ", DashboardService.increasedNumberforName)
 
     const dashboardXML1 = `<dashboard>
-  <label>_Tipologie di Richieste per Utente_</label>
-  <description>Quantità e tipologie di richieste fatte dall'ip ${Ip}</description>
+  <label>_IP: ${Ip} - Tipologie di Richieste_</label>
+  <description>Quantità e tipologie di richieste fatte dall'Ip ${Ip}</description>
   
   <row>
     <panel>
@@ -122,7 +122,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
 </dashboard>`
     console.log("INVIO RICHIESTA API PER DASHBOARD....\n")
 
-    await dashboardService.createDashboard('admin', 'search', `IP_${Ip.replace(/\./g, '_')}_requests`, dashboardXML1); //Splunk non vuole punti nel nome della dashboard, per questo sostituiti con underscore
+    await dashboardService.createDashboard( Ip, dashboardXML1); //Splunk non vuole punti nel nome della dashboard, per questo sostituiti con underscore
     //await dashboardService.createDashboard('admin', 'search', `user_${DashboardService.increasedNumberforName}_errors`, dashboardXML1);
     
     
