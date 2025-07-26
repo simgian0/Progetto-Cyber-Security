@@ -52,16 +52,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
    console.log(`Error stats for ${Ip}:`, stats);
 
     // 3. Create dashboard
-    console.log("PRIMA DI CREARE DASHBOARD DASHBOARDCREATED E': ", dashboardService.getdashboardCreated());
-    console.log("PRIMA DI CREARE DASHBOARD NUMBERFORNAME E': ", DashboardService.increasedNumberforName);
-
-    if (!dashboardService.getdashboardCreated()) {
-   
-
-    dashboardService.switchdashboardCreated();
-    dashboardService.increaseNumber();
-    console.log("dashboardNumberName = ", DashboardService.increasedNumberforName)
-
+    
     const dashboardXML1 = `<dashboard>
   <label>_IP: ${Ip} - Tipologie di Richieste_</label>
   <description>Quantità e tipologie di richieste fatte dall'Ip ${Ip}</description>
@@ -119,16 +110,13 @@ const errorMessageFactory: errorFactory = new errorFactory();
       </table>
     </panel>
   </row>
-</dashboard>`
-    console.log("INVIO RICHIESTA API PER DASHBOARD....\n")
+</dashboard>`;
+    console.log("PRIMA DI CREARE DASHBOARD NUMBERFORNAME ");
 
-    await dashboardService.createDashboard( Ip, dashboardXML1); //Splunk non vuole punti nel nome della dashboard, per questo sostituiti con underscore
-    //await dashboardService.createDashboard('admin', 'search', `user_${DashboardService.increasedNumberforName}_errors`, dashboardXML1);
+    await dashboardService.createOrUpdateDashboard(Ip,dashboardXML1);
     
+    console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED ");
     
-    };
-    console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED E': ", dashboardService.getdashboardCreated());
-    console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED E': ", DashboardService.increasedNumberforName);
     // Inietta stats per PDP
     (req as any).errorStats = stats;
 
@@ -145,7 +133,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
         code: error.code,
         status: error.response?.status || 500
     }); // continua senza bloccare la request in caso fallisca
-  }
+  };
 };
 
 

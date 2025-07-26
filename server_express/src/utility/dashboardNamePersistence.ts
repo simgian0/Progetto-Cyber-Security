@@ -118,19 +118,6 @@ export class DashboardPersistenceService {
     return !!this.dashboardsCache[dashboardName];
   }
 
-  
-
-  // Metodi per Splunk API (esempi)
-  private async createDashboard(name: string, xml: string): Promise<void> {
-    console.log(`Creating dashboard: ${name}`);
-    // await this.apiClient.callAPI('POST', '/servicesNS/admin/search/data/ui/views', { name, xml });
-  }
-
-  private async updateDashboard(name: string, xml: string): Promise<void> {
-    console.log(`Updating dashboard: ${name}`);
-    // await this.apiClient.callAPI('POST', `/servicesNS/admin/search/data/ui/views/${name}`, { xml });
-  }
-
   // Pulisci eventuali lock rimasti (da chiamare all'avvio dell'applicazione)
   static async cleanupStaleLocks(): Promise<void> {
     try {
