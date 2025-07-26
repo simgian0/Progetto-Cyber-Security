@@ -6,7 +6,7 @@ const LOG_FILE_PATH = path.join('/app/logs', 'server.log');
 const SCORE_LOG_FILE_PATH = path.join('/app/logs', 'score.log');
 
 // Funzione per garantire che la directory esista
-const ensureLogDirectoryExists = (filePath: string) => {
+export const ensureLogDirectoryExists = (filePath: string) => {
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
