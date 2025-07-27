@@ -103,7 +103,8 @@ def run():
             payload = req["payload"](user_id) if callable(req["payload"]) else req["payload"]
 
             print(f"\n - {action} da user {user_id}")
-            headers = {"X-User-ID": str(user_id)}  # gestisce il server (come se user_id fosse l'utente autenticato)
+            headers = {"X-User-ID": str(user_id), # gestisce il server (come se user_id fosse l'utente autenticato)
+                       "X-Mac-Address": "02:42:ac:11:00:01"}  # mac del client
 
             try:
                 if action == "GET_ONE":
