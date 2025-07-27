@@ -33,6 +33,9 @@ class permissionMiddleware{
                 // Verifica se il ruolo dell'utente corrisponde a uno dei ruoli richiesti
                 if (requiredRoles.includes(user.role)) {
                     req.body.score = calculateScore(req.body.score, 'add', 10);
+                    req.body.name = user.name;
+                    req.body.role = user.role;
+                    req.body.team = user.team;
                     return next();  // Ruolo valido, continua l'elaborazione
                 } else {
                     // Se l'utente non ha il permesso, restituisci un errore
