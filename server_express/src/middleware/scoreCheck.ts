@@ -189,6 +189,7 @@ export const scoreTrustNetworkAnalysisMiddleware = async (req: Request, res: Res
     return next();
 }
 
+//Middleware che abbassa lo score in base alle richieste effettuate fuori dall'orario di lavoro
 export const scoreOutsideWorkHours = async (req: Request, res: Response, next: NextFunction) => {
     const forwarded = req.headers['x-forwarded-for'];
     const clientIP = typeof forwarded === 'string'
@@ -210,7 +211,7 @@ export const scoreOutsideWorkHours = async (req: Request, res: Response, next: N
         console.log('\nSPLUNK QUERY: Splunk query results scoreOutsideWorkHours:', result,"\n")
 
          // 2. Calculate stats
-        const total_off_hours = result.result?.count; // numero di richieste effettuate fuori da fascia oraria lavorativa
+        const total_off_hours = Number(result.result?.count); // numero di richieste effettuate fuori da fascia oraria lavorativa
         console.log('\nSPLUNK QUERY: Splunk query results scoreOutsideWorkHours total_off_hours :',total_off_hours,"\n")
 
         const penalty = Math.min( Math.floor(total_off_hours /10) * 0.5 , 10 ) // per ogni 10 richieste fuori orario abbassa lo score di 0.5, lo score si può abbassare di un massimo di 10
@@ -218,13 +219,69 @@ export const scoreOutsideWorkHours = async (req: Request, res: Response, next: N
         console.log(`[TRUST][OUTSIDE WORK HOURS] Penalty -${penalty} applied. New score: ${req.body.score}`);
 
         console.log("\n-----FINE------ Dentro scoreQuery->scoreOutsideWorkHours IP: ", clientIP);
+
+        return next();
     
     } catch (error:any) {
-        console.error(`Splunk middleware error with obtain score from query: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
+        console.error(`Splunk middleware error with calculate score from outside working hours: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
         if (error.response) {
          console.error(`Status: ${error.response.status}`);
         }
-        const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Error with calculating score form query');
-        return res.json({ error: message });
+        return next();
     }
+
+}
+
+export const scoreTrustDosAnalysisMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : req.ip?.startsWith('::ffff:')
+            ? req.ip.replace('::ffff:', '')
+            : req.ip || '';
+    
+    if (!clientIP || typeof req.body.score !== 'number') {
+        return next();
+    }
+
+    console.log("\n-----INIZIO------ Dentro scoreQuery->scoreTrustDosAnalysisMiddleware IP: ", clientIP);
+
+    try {
+
+        // 1. Ritorna il tempo medio complessivo tra una richiesta e la sua successiva
+        const result = await searchService.searchDosAttackbyAvgBetweenRequest(clientIP);
+        console.log('\nSPLUNK QUERY: Splunk query results search.Dos.Attack.by.Avg.Between.Request:', result,"\n")
+
+         // 2. Calculate stats and update score
+        const avg_time_between_attempts = result.result?.avg_time_between_attempts; 
+        console.log('\nSPLUNK QUERY: Splunk query results scoreTrustDosAnalysisMiddleware total_off_hours :',avg_time_between_attempts,"\n")
+
+        if (avg_time_between_attempts < 10) {// se il tempo medio complessivo tra richieste è minore di 10 secondi allora Attacco Dos e abbasso di 5
+        const penalty: number = 5;
+        req.body.score = calculateScore(req.body.score, 'subtract', penalty);
+        console.log(`[TRUST][DOS AVG TIME] Penalty -${penalty} applied. New score: ${req.body.score}`);
+        }
+
+        //1. Ritorna una riga con il ratio tra richieste 403 e il totale(25), se maggiore del 75% score si abbassa di 10, se maggiore 50% del 5, zero altrimenti
+        const result1 = await searchService.searchDosAttackbyNumberOfNearBadRequest(clientIP);
+        console.log('\nSPLUNK QUERY: Splunk query results search.Dos.Attack.by.Number.Of.Near.Bad.Request:', result1,"\n")
+
+        const score_penalty = Number(result1.result?.score_penalty); 
+        console.log('\nSPLUNK QUERY: Splunk query results scoreTrustDosAnalysisMiddleware score penality :',score_penalty,"\n");
+
+        req.body.score = calculateScore(req.body.score, 'subtract', score_penalty);
+        console.log(`[TRUST][DOS N° BAD REQUEST] Penalty -${score_penalty} applied. New score: ${req.body.score}`);
+
+
+        console.log("\n-----FINE------ Dentro scoreQuery->scoreOutsideWorkHours IP: ", clientIP);
+        return next();
+    
+    } catch (error:any) {
+        console.error(`Splunk middleware error with calculate score Dos: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
+        if (error.response) {
+         console.error(`Status: ${error.response.status}`);
+        }
+        return next();
+    }
+
 }

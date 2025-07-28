@@ -9,6 +9,7 @@ import * as errorMiddleware from "./middleware/errorHandler"
 import  {generalRequestStatusforIP}  from "./middleware/splunkQueryLog";
 import { scoreInitMiddleware, scoreTrustAnalysisMiddleware, scoreTrustNetworkAnalysisMiddleware } from './middleware/scoreCheck';
 import { scoreOutsideWorkHours } from './middleware/scoreCheck';
+import { scoreTrustDosAnalysisMiddleware } from './middleware/scoreCheck';
 dotenv.config();
 
 const app = express();
@@ -47,6 +48,7 @@ app.use(scoreInitMiddleware); // inizializza a 50 lo score
 app.use(scoreTrustAnalysisMiddleware); // abbassa/alza lo score in base all'avg score di ip, della subnet e del mac address delle ultime 100 richieste
 app.use(scoreTrustNetworkAnalysisMiddleware); // abbassa/alza lo score in base alla network in cui si fa la richiesta
 app.use(scoreOutsideWorkHours); //abbassa lo score in base a un tot di richieste giornaliere fatte fuori orario di lavoro, per un multiplo
+app.use(scoreTrustDosAnalysisMiddleware)
 
 app.use(generalRequestStatusforIP);
 

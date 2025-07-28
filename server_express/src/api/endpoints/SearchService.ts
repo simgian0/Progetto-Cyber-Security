@@ -159,5 +159,53 @@ export class SearchService {
 
         return this.apiClient.callAPI('POST', endpoint, params);
     }
+    
+    //Query che ritorna il tempo medio complessivo tra una richiesta e la sua successiva per un totale delle 20 ultime richieste
+    async searchDosAttackbyAvgBetweenRequest(ip: string) {
+        const endpoint = '/services/search/jobs/export';
+        const query = `
+            search index=express 
+            | spath input=log path=request_ip output=request_ip
+            | search request_ip="${ip}"
+            | fields _time, request_ip
+            | sort 0-_time 
+            | streamstats count as attempt
+            | where attempt <= 25 
+            | sort 0 _time
+            | streamstats current=f last(_time) as prev_time 
+            | eval diff=if(isnull(prev_time), 0, _time - prev_time)
+            | stats avg(diff) as avg_time_between_attempts
+            | table avg_time_between_attempts
+        `;
+
+        const params = new URLSearchParams();
+        params.append('search', query);
+        params.append('output_mode', 'json');
+
+        return this.apiClient.callAPI('POST', endpoint, params);
+    }
+
+    async searchDosAttackbyNumberOfNearBadRequest(ip: string) {
+        const endpoint = '/services/search/jobs/export';
+        const query = `
+            search index=express earliest=-10m
+            | spath input=log path=request_ip output=request_ip
+            | spath input=log path=status output=status
+            | search request_ip="${ip}"
+            | sort -_time
+            | head 25
+            | eval is_forbidden=if(status=403, 1, 0)
+            | stats sum(is_forbidden) as forbidden_count, count as total_requests, avg(_time) as avg_time by request_ip
+            | eval forbidden_ratio=round((forbidden_count/total_requests)*100, 2)
+            | eval score_penalty=if(forbidden_ratio >= 75, 10, if(forbidden_ratio >= 50, 5, 0))
+            | table request_ip, total_requests, forbidden_count, forbidden_ratio, score_penalty
+        `;
+
+        const params = new URLSearchParams();
+        params.append('search', query);
+        params.append('output_mode', 'json');
+
+        return this.apiClient.callAPI('POST', endpoint, params);
+    }
 
 }
