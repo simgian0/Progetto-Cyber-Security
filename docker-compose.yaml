@@ -131,11 +131,18 @@ volumes:
   splunk-data:
   uf-var:
   snort-logs:
+
 networks:
   app-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
     driver_opts:
       com.docker.network.enable_ipv4: "true"
       com.docker.network.enable_ipv6: "false"
   wifi:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

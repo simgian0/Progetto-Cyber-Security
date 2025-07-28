@@ -79,7 +79,7 @@ class permissionMiddleware{
             const drawing = await Drawing.findByPk(drawingId);
 
             if (!drawing) {
-                req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                req.body.score = calculateScore(req.body.score, 'subtract', 5);
                 const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Drawing not found');
                 return res.json({ error: message });
             }

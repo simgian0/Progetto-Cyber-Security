@@ -117,4 +117,27 @@ export class SearchService {
 
         return this.apiClient.callAPI('POST', endpoint, params);
     }
+
+    // Fa una tabella con avg score dell'IP specificato
+    async getAvgScoreByIp(ip: string) {
+        const endpoint = '/services/search/jobs/export';
+        const query = `
+            search index=score
+            | spath input=log path=request_ip output=request_ip
+            | spath input=log path=score output=score
+            | spath input=log path=time output=time
+            | eval score = tonumber(score)
+            | search request_ip="${ip}" AND score != ""
+            | sort -time
+            | head 100
+            | stats avg(score) as avg_score
+            | table avg_score
+        `;
+
+        const params = new URLSearchParams();
+        params.append('search', query);
+        params.append('output_mode', 'json');
+
+        return this.apiClient.callAPI('POST', endpoint, params);
+    }
 }

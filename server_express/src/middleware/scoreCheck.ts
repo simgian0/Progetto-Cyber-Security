@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { SearchService } from '../api/endpoints/SearchService'
+import { calculateScore } from '../utility/scoreCalc';
 
 // Import factory
 import { errorFactory } from "../factory/FailMessage";
@@ -8,7 +9,7 @@ import { ErrorMessage } from "../factory/Messages";
 const errorMessageFactory: errorFactory = new errorFactory();
 const searchService = new SearchService();
 
-export const scoreCheckMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+/*export const scoreCheckMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const forwarded = req.headers['x-forwarded-for'];
         const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || '';
@@ -48,8 +49,9 @@ export const scoreCheckMiddleware = async (req: Request, res: Response, next: Ne
         const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Error with searching for scores');
         return res.json({ error: message });
     }
-};
+};*/
 
+// Applica penalità o bonus sullo score in base agli avg score di ip, subnet e MAC
 export const scoreTrustAnalysisMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const forwarded = req.headers['x-forwarded-for'];
     const clientIP = typeof forwarded === 'string'
@@ -65,36 +67,124 @@ export const scoreTrustAnalysisMiddleware = async (req: Request, res: Response, 
     const subnet = clientIP.split('.').slice(0, 2).join('.');
 
     if (!subnet || !mac) {
-        req.body.scoreMultiplier = 1.0;
         return next();
     }
 
     try {
         const subnetRes = await searchService.getAvgScoreBySubnet(subnet);
         const macRes = await searchService.getAvgScoreByMac(mac);
-        //console.log("-------------------------------- result", subnetRes);
-        //console.log("-------------------------------- result", macRes);
+        const ipRes = await searchService.getAvgScoreByIp(clientIP);
+        
         const subnetScore = Number(subnetRes.result?.avg_score);
         const macScore = Number(macRes.result?.avg_score);
-        // Blocco se troppo bassi
-        if ((!isNaN(subnetScore) && subnetScore < 20) || (!isNaN(macScore) && macScore < 20)) {
-            const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized,`Blocked request: trust score too low (subnetScore: ${subnetScore}, macScore: ${macScore})`);
-            return res.json({ error: message });
+        const ipScore = Number(ipRes.result?.avg_score);
+        
+        // Penalità e premio sullo score
+        if (req.body && typeof req.body.score === 'number') {
+            let penalty = 0;
+            let bonus = 0;
+            if (!isNaN(macScore)) {
+                if (macScore <= 20) {
+                    penalty += 10;
+                    console.log(`[TRUST] MAC penalty -10 (macScore: ${macScore})`);
+                } else if (macScore <= 50) {
+                    penalty += 5;
+                    console.log(`[TRUST] MAC penalty -5 (macScore: ${macScore})`);
+                } else if (macScore >= 70) {
+                    bonus += 10;
+                    console.log(`[TRUST] MAC bonus +10 (macScore: ${macScore})`);
+                }
+            }
+
+            // subnetScore pesa un po di meno in quanto rappresenta un intera subnet
+            if (!isNaN(subnetScore)) {
+                if (subnetScore <= 20) {
+                    penalty += 5;
+                    console.log(`[TRUST] Subnet penalty -10 (subnetScore: ${subnetScore})`);
+                } else if (subnetScore <= 50) {
+                    penalty += 2;
+                    console.log(`[TRUST] Subnet penalty -5 (subnetScore: ${subnetScore})`);
+                } else if (subnetScore >= 70) {
+                    bonus += 5;
+                    console.log(`[TRUST] Subnet bonus +10 (subnetScore: ${subnetScore})`);
+                }
+            }
+
+            if (!isNaN(ipScore)) {
+                if (ipScore <= 20) {
+                    penalty += 10;
+                    console.log(`[TRUST] IP penalty -10 (ipScore: ${ipScore})`);
+                } else if (ipScore <= 50) {
+                    penalty += 5;
+                    console.log(`[TRUST] IP penalty -5 (ipScore: ${ipScore})`);
+                } else if (ipScore >= 70) {
+                    bonus += 10;
+                    console.log(`[TRUST] IP bonus +10 (ipScore: ${ipScore})`);
+                }
+            }
+
+            if (penalty > 0) {
+                req.body.score = calculateScore(req.body.score, "subtract", penalty);
+                console.log(`[TRUST] Total trust penalty applied: -${penalty}, New score: ${req.body.score}`);
+            }
+
+            if (bonus > 0) {
+                req.body.score = calculateScore(req.body.score, "add", bonus);
+                console.log(`[TRUST] Total trust bonus applied: +${bonus}, New score: ${req.body.score}`);
+            }
         }
 
-        const macMultiplier = isNaN(macScore) ? 1.0 : macScore < 50 ? 0.6 : 1.0;
-        const subnetMultiplier = isNaN(subnetScore) ? 1.0 : subnetScore < 50 ? 0.6 : 1.0;
-        const multiplier = (macMultiplier + subnetMultiplier) / 2;
-
-        req.body.scoreMultiplier = multiplier;
-
-        console.log(`[TRUST] clientIP: ${clientIP}, subnet: ${subnet}, mac: ${mac}`);
-        console.log(`[TRUST] MAC avg: ${macScore}, Subnet avg: ${subnetScore}, Multiplier: ${multiplier}`);
+        console.log(`[TRUST] Final score: ${req.body.score} | MAC avg: ${macScore}, Subnet avg: ${subnetScore}`);
 
         return next();
     } catch (err) {
         console.error('Trust analysis error:', err);
-        req.body.scoreMultiplier = 1.0;
         return next();
     }
+}
+
+export const scoreInitMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    req.body.score = 50;
+    next();
+};
+
+// Applica penalità o bonus sullo score in base al tipo di network
+export const scoreTrustNetworkAnalysisMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : req.ip?.startsWith('::ffff:')
+            ? req.ip.replace('::ffff:', '')
+            : req.ip || '';
+    
+    if (!clientIP || typeof req.body.score !== 'number') {
+        return next();
+    }
+
+    const ipParts: number[] = clientIP.split('.').map((part: string) => parseInt(part, 10));
+    let bonus = 0;
+    let penalty = 0;
+
+    if (ipParts[0] === 172 && ipParts[1] === 19) {
+        bonus += 10;
+        console.log(`[TRUST][NETWORK] Ethernet bonus +10 applied for IP ${clientIP}`);
+    } else if (ipParts[0] === 172 && ipParts[1] === 20) {
+        penalty += 5;
+        console.log(`[TRUST][NETWORK] WiFi penalty -5 applied for IP ${clientIP}`);
+    } else {
+        penalty += 10;
+        console.log(`[TRUST][NETWORK] External network penalty -10 applied for IP ${clientIP}`);
+    }
+
+    if (penalty > 0) {
+        req.body.score = calculateScore(req.body.score, 'subtract', penalty);
+        console.log(`[TRUST][NETWORK] Penalty -${penalty} applied. New score: ${req.body.score}`);
+    }
+
+    if (bonus > 0) {
+        req.body.score = calculateScore(req.body.score, 'add', bonus);
+        console.log(`[TRUST][NETWORK] Bonus +${bonus} applied. New score: ${req.body.score}`);
+    }
+
+    return next();
 }

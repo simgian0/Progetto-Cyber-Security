@@ -7,7 +7,7 @@ import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
 import  {generalRequestStatusforIP}  from "./middleware/splunkQueryLog";
-import { scoreCheckMiddleware, scoreTrustAnalysisMiddleware } from './middleware/scoreCheck';
+import { scoreInitMiddleware, scoreTrustAnalysisMiddleware, scoreTrustNetworkAnalysisMiddleware } from './middleware/scoreCheck';
 import { statusforAllIP } from './middleware/splunkQueryLog';
 dotenv.config();
 
@@ -42,9 +42,10 @@ app.use(splunkLogger);
 // Middleware per bloccare IP
 app.use(blockListMiddleware);
 
-// Middleware per salvare lo score e analizzarlo
-app.use(scoreCheckMiddleware);
-app.use(scoreTrustAnalysisMiddleware);
+// Middleware per modificare lo score
+app.use(scoreInitMiddleware); // inizializza a 50 lo score
+app.use(scoreTrustAnalysisMiddleware); // abbassa/alza lo score in base all'avg score di ip, della subnet e del mac address delle ultime 100 richieste
+app.use(scoreTrustNetworkAnalysisMiddleware); // abbassa/alza lo score in base alla network in cui si fa la richiesta
 
 app.use(generalRequestStatusforIP);
 
