@@ -46,7 +46,7 @@ export class SearchService {
     }
 
     // fa una tabella con: time, score, minuti dall'ultima richiesta, recovered_score ovvero possibile nuovo punteggio recuperato nel frattempo, ip richiesta
-    async searchScore(ip: string) {
+    /*async searchScore(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
             search index=score
@@ -70,7 +70,7 @@ export class SearchService {
         params.append('output_mode', 'json');
 
         return this.apiClient.callAPI('POST', endpoint, params);
-    }
+    }*/
 
     // fa una tabella con avg score della subnet di riferimento
     async getAvgScoreBySubnet(subnet: string) {
