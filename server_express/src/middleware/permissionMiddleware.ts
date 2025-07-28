@@ -33,6 +33,7 @@ class permissionMiddleware{
                 // Verifica se il ruolo dell'utente corrisponde a uno dei ruoli richiesti
                 if (requiredRoles.includes(user.role)) {
                     req.body.score = calculateScore(req.body.score, 'add', 10);
+                    console.log(`[TRUST][PERMISSION] Bonus checkRole +10 applied. New score: ${req.body.score}`);
                     req.body.name = user.name;
                     req.body.role = user.role;
                     req.body.team = user.team;
@@ -40,6 +41,7 @@ class permissionMiddleware{
                 } else {
                     // Se l'utente non ha il permesso, restituisci un errore
                     req.body.score = calculateScore(req.body.score, 'subtract', 10);
+                    console.log(`[TRUST][PERMISSION] Penalty checkRole -10 applied. New score: ${req.body.score}`);
                     const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Forbidden: You do not have permission to perform this action');
                     return res.json({ error: message });
                 }
@@ -82,7 +84,8 @@ class permissionMiddleware{
             const drawing = await Drawing.findByPk(drawingId);
 
             if (!drawing) {
-                req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                req.body.score = calculateScore(req.body.score, 'subtract', 5);
+                console.log(`[TRUST][PERMISSION] Penalty checkTeam -5 applied. New score: ${req.body.score}`);
                 const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Drawing not found');
                 return res.json({ error: message });
             }
@@ -91,11 +94,13 @@ class permissionMiddleware{
             // Consente anche se l'utente ne è il proprietario, anche se il team è diverso
             if (user.id !== drawing.owner_id && user.team !== drawing.target_team) {
                 req.body.score = calculateScore(req.body.score, 'subtract', 10);
+                console.log(`[TRUST][PERMISSION] Penalty checkTeam -10 applied. New score: ${req.body.score}`);
                 const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'Forbidden: You are not in the same team as the drawing owner');
                 return res.json({ error: message });
             }
             
             req.body.score = calculateScore(req.body.score, 'add', 10);
+            console.log(`[TRUST][PERMISSION] Bonus checkTeam +10 applied. New score: ${req.body.score}`);
             next();
         } catch (error) {
             // In caso di errore nel processo, restituisci un errore generico
@@ -131,6 +136,7 @@ class permissionMiddleware{
             // Se l'utente è un impiegato e specifica un team diverso dal proprio
             if (user.role === 'impiegato' && user.team !== target_team) {
                 req.body.score = calculateScore(req.body.score, 'subtract', 10);
+                console.log(`[TRUST][PERMISSION] Penalty checkTargetTeam -10 applied. New score: ${req.body.score}`);
                 const message = errorMessageFactory.createMessage(
                     ErrorMessage.notAuthorized,
                     `Users with role "Impiegato" are not allowed to create drawings for a team other than their own.`
@@ -139,6 +145,7 @@ class permissionMiddleware{
             }
 
             req.body.score = calculateScore(req.body.score, 'add', 10);
+            console.log(`[TRUST][PERMISSION] Bonus checkTargetTeam +10 applied. New score: ${req.body.score}`);
             return next();
         } catch (error) {
             const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Internal server error');
