@@ -137,8 +137,8 @@ export const scoreTrustAnalysisMiddleware = async (req: Request, res: Response, 
         console.log(`[TRUST] Final score: ${req.body.score} | MAC avg: ${macScore}, Subnet avg: ${subnetScore}`);
 
         return next();
-    } catch (err) {
-        console.error('Trust analysis error:', err);
+    } catch (err: any) {
+        console.error('Trust analysis error:',  err.response?.data || err.message);
         return next();
     }
 }
@@ -160,7 +160,7 @@ export const scoreTrustNetworkAnalysisMiddleware = async (req: Request, res: Res
     if (!clientIP || typeof req.body.score !== 'number') {
         return next();
     }
-
+    
     const ipParts: number[] = clientIP.split('.').map((part: string) => parseInt(part, 10));
     let bonus = 0;
     let penalty = 0;
@@ -187,4 +187,44 @@ export const scoreTrustNetworkAnalysisMiddleware = async (req: Request, res: Res
     }
 
     return next();
+}
+
+export const scoreOutsideWorkHours = async (req: Request, res: Response, next: NextFunction) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : req.ip?.startsWith('::ffff:')
+            ? req.ip.replace('::ffff:', '')
+            : req.ip || '';
+    
+    if (!clientIP || typeof req.body.score !== 'number') {
+        return next();
+    }
+
+    console.log("\n-----INIZIO------ Dentro scoreQuery->scoreOutsideWorkHours IP: ", clientIP);
+
+    try {
+
+        // 1. Ritorna il numero di richiesta fatte fuori da orario lavorativo (8:00 - 20:00)
+        const result = await searchService.searchOutsideWorkHours(clientIP);
+        console.log('\nSPLUNK QUERY: Splunk query results scoreOutsideWorkHours:', result,"\n")
+
+         // 2. Calculate stats
+        const total_off_hours = result.result?.count; // numero di richieste effettuate fuori da fascia oraria lavorativa
+        console.log('\nSPLUNK QUERY: Splunk query results scoreOutsideWorkHours total_off_hours :',total_off_hours,"\n")
+
+        const penalty = Math.min( Math.floor(total_off_hours /10) * 0.5 , 10 ) // per ogni 10 richieste fuori orario abbassa lo score di 0.5, lo score si può abbassare di un massimo di 10
+        req.body.score = calculateScore(req.body.score, 'subtract', penalty);
+        console.log(`[TRUST][OUTSIDE WORK HOURS] Penalty -${penalty} applied. New score: ${req.body.score}`);
+
+        console.log("\n-----FINE------ Dentro scoreQuery->scoreOutsideWorkHours IP: ", clientIP);
+    
+    } catch (error:any) {
+        console.error(`Splunk middleware error with obtain score from query: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
+        if (error.response) {
+         console.error(`Status: ${error.response.status}`);
+        }
+        const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Error with calculating score form query');
+        return res.json({ error: message });
+    }
 }

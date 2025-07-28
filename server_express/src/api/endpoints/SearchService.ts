@@ -140,4 +140,24 @@ export class SearchService {
 
         return this.apiClient.callAPI('POST', endpoint, params);
     }
+
+        async searchOutsideWorkHours(ip: string) {
+        const endpoint = '/services/search/jobs/export';
+        const query = `
+            search index=express earliest=-24h
+            | spath input=log path=request_ip output=request_ip 
+            | search request_ip="${ip}" 
+            | eval hour=strftime(_time, "%H") 
+            | where tonumber(hour) < 8 OR tonumber(hour) >= 20
+            | stats count by request_ip
+            | table request_ip, count
+        `;
+
+        const params = new URLSearchParams();
+        params.append('search', query);
+        params.append('output_mode', 'json');
+
+        return this.apiClient.callAPI('POST', endpoint, params);
+    }
+
 }
