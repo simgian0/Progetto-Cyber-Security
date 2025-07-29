@@ -214,9 +214,12 @@ export const scoreOutsideWorkHours = async (req: Request, res: Response, next: N
         const total_off_hours = Number(result.result?.count); // numero di richieste effettuate fuori da fascia oraria lavorativa
         console.log('\nSPLUNK QUERY: Splunk query results scoreOutsideWorkHours total_off_hours :',total_off_hours,"\n")
 
+        if(!isNaN(total_off_hours) && total_off_hours > 0){
+        
         const penalty = Math.min( Math.floor(total_off_hours /10) * 0.5 , 10 ) // per ogni 10 richieste fuori orario abbassa lo score di 0.5, lo score si può abbassare di un massimo di 10
         req.body.score = calculateScore(req.body.score, 'subtract', penalty);
         console.log(`[TRUST][OUTSIDE WORK HOURS] Penalty -${penalty} applied. New score: ${req.body.score}`);
+        }
 
         console.log("\n-----FINE------ Dentro scoreQuery->scoreOutsideWorkHours IP: ", clientIP);
 
@@ -253,10 +256,10 @@ export const scoreTrustDosAnalysisMiddleware = async (req: Request, res: Respons
         console.log('\nSPLUNK QUERY: Splunk query results search.Dos.Attack.by.Avg.Between.Request:', result,"\n")
 
          // 2. Calculate stats and update score
-        const avg_time_between_attempts = result.result?.avg_time_between_attempts; 
+        const avg_time_between_attempts = Number(result.result?.avg_time_between_attempts); 
         console.log('\nSPLUNK QUERY: Splunk query results scoreTrustDosAnalysisMiddleware total_off_hours :',avg_time_between_attempts,"\n")
 
-        if (avg_time_between_attempts < 10) {// se il tempo medio complessivo tra richieste è minore di 10 secondi allora Attacco Dos e abbasso di 5
+        if (!isNaN(avg_time_between_attempts) && avg_time_between_attempts < 10) {// se il tempo medio complessivo tra richieste è minore di 10 secondi allora Attacco Dos e abbasso di 5
         const penalty: number = 5;
         req.body.score = calculateScore(req.body.score, 'subtract', penalty);
         console.log(`[TRUST][DOS AVG TIME] Penalty -${penalty} applied. New score: ${req.body.score}`);
@@ -266,11 +269,27 @@ export const scoreTrustDosAnalysisMiddleware = async (req: Request, res: Respons
         const result1 = await searchService.searchDosAttackbyNumberOfNearBadRequest(clientIP);
         console.log('\nSPLUNK QUERY: Splunk query results search.Dos.Attack.by.Number.Of.Near.Bad.Request:', result1,"\n")
 
-        const score_penalty = Number(result1.result?.score_penalty); 
-        console.log('\nSPLUNK QUERY: Splunk query results scoreTrustDosAnalysisMiddleware score penality :',score_penalty,"\n");
+        
+        const score_penalty = Number(result1.result?.score_penalty);
+        const forbidden_ratio = Number(result1.result?.forbidden_ratio); 
+        console.log('\nSPLUNK QUERY: Splunk query results scoreTrustDosAnalysisMiddleware score penality :',score_penalty, "and forbidden ratio: ", forbidden_ratio,"\n");
+
+        if(!isNaN(forbidden_ratio)){
+        if(forbidden_ratio >= 50){//Apply penalty if ratio >50 = -5 and if >75 = -10
 
         req.body.score = calculateScore(req.body.score, 'subtract', score_penalty);
         console.log(`[TRUST][DOS N° BAD REQUEST] Penalty -${score_penalty} applied. New score: ${req.body.score}`);
+        }
+        
+        if(forbidden_ratio < 25){ //Aplly reward +10 if ratio <25 and +5 in ratio <50
+            req.body.score = calculateScore(req.body.score, 'add', 10);
+            console.log(`[TRUST][DOS N° BAD REQUEST] Reward +10 applied. New score: ${req.body.score}`);
+
+        }else{
+            req.body.score = calculateScore(req.body.score, 'add', 5);
+            console.log(`[TRUST][DOS N° BAD REQUEST] Reward +5 applied. New score: ${req.body.score}`);
+
+        }}
 
 
         console.log("\n-----FINE------ Dentro scoreQuery->scoreOutsideWorkHours IP: ", clientIP);
