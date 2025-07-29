@@ -25,6 +25,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
   console.log('DENTRO SPLUNKMIDDLEWARE......')
 
   try {
+    /*
     // 1. Search logs
     const logs = await searchService.searchLogs('express', Ip, '*'); //La risposta di Splunk REST API /export è una stringa di JSON Lines (oggetti JSON separati da \n)
     //console.log('SPLUNK QUERY: Splunk query results:',typeof logs, logs)
@@ -51,7 +52,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
      }, {});
    console.log(`Error stats for ${Ip}:`, stats);
 
-    // 3. Create dashboard
+    */// 3. Create dashboard
     
      const dashboardXMLFinale = `<dashboard>
   <label>Report per IP: ${Ip}</label>
@@ -129,7 +130,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           | xyseries day time_range count</query>
           <earliest>-7d@d</earliest>
           <latest>now</latest>
-          <refresh>3m</refresh>
+          <refresh>1m</refresh>
         </search>
         <option name="charting.axisTitleX.text">Giorno</option>
         <option name="charting.axisTitleY.text">Numero Richieste</option>
@@ -149,7 +150,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           <query>index=score | spath input=log path=request_ip output=request_ip  | spath input=log path=score output=score | search request_ip="${Ip}" | where isnotnull(score) AND score != "" | timechart span=2m latest(score) as score</query>
           <earliest>-1h</earliest>
           <latest>now</latest>
-          <refresh>3m</refresh>
+          <refresh>1m</refresh>
         </search>
         <option name="charting.axisLabelsY2.majorUnit">10</option>
         <option name="charting.axisTitleX.text">Tempo</option>
@@ -180,7 +181,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           </query>
           <earliest>-15m</earliest>
           <latest>now</latest>
-          <refresh>3m</refresh>
+          <refresh>1m</refresh>
         </search>
         <option name="colorMode">block</option>
         <option name="rangeColors">["0xd41f1f","0xe98300","0xf8be34","0x118832","0x003f24"]</option>
@@ -198,7 +199,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           <earliest>-15m</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
-          <refresh>3m</refresh>
+          <refresh>1m</refresh>
           <refreshType>delay</refreshType>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -252,7 +253,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           | stats count by status_type</query>
           <earliest>-7d@d</earliest>
           <latest>now</latest>
-          <refresh>3m</refresh>
+          <refresh>1m</refresh>
         </search>
         <option name="charting.chart">pie</option>
         <option name="charting.drilldown">none</option>
@@ -288,7 +289,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           | head 10</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
-          <refresh>3m</refresh>
+          <refresh>1m</refresh>
         </search>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
@@ -305,9 +306,6 @@ const errorMessageFactory: errorFactory = new errorFactory();
     
     console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED ");
     
-    // Inietta stats per PDP
-    (req as any).errorStats = stats;
-
     next();
 
   } catch (error: any) {
@@ -315,17 +313,14 @@ const errorMessageFactory: errorFactory = new errorFactory();
      if (error.response) {
         console.error(`Status: ${error.response.status}`);
      }
-    //res.status(500).json({ error: 'Internal server error during Splunk processing' });
-    next({
-        message: error.message,
-        code: error.code,
-        status: error.response?.status || 500
-    }); // continua senza bloccare la request in caso fallisca
+        const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Error with dashboard request');
+    return res.json({ error: message });
+
   };
 };
 
 
- export const statusforAllIP = async(req: Request, res: Response, next: NextFunction) => {
+ /*export const statusforAllIP = async(req: Request, res: Response, next: NextFunction) => {
   //const userOrIp = req.headers['x-user-id'] as string || req.ip as string;
   const Ip = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
 
@@ -368,7 +363,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
 
     // Inietta stats per PDP
     (req as any).errorStats = stats;
-*/
+
     next();
 
   } catch (error) {
@@ -376,4 +371,4 @@ const errorMessageFactory: errorFactory = new errorFactory();
     //res.status(500).json({ error: 'Internal server error during Splunk processing' });
     next(); // continua senza bloccare la request in caso fallisca
   }
-};
+};*/
