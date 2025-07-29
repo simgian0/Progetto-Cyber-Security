@@ -4,7 +4,7 @@ import { ErrorMessage } from '../factory/Messages';
 
 const errorMessageFactory = new errorFactory();
 
-// Middleware che blocca la richiesta se lo score è troppo basso (< 20)
+// Middleware che blocca la richiesta (CHE ANDREBBE A BUON FINE) se lo score è troppo basso (< 20)
 export const enforceScoreMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const score = req.body.score;
     if (typeof score === 'number' && !isNaN(score)) {
