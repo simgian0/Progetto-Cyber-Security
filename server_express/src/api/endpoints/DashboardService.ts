@@ -66,8 +66,8 @@ export class DashboardService {
           [dashboardName]: true
         });
       }
-    } catch (error) {
-      console.error(`Error in createOrUpdateDashboard for ${dashboardName}:`, error);
+    } catch (error:any) {
+      console.error(`Error in createOrUpdateDashboard for ${dashboardName}: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
       throw error;
     }
   }

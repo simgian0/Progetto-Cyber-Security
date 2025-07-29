@@ -164,7 +164,7 @@ export class SearchService {
     async searchDosAttackbyAvgBetweenRequest(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
-            search index=express 
+            search index=express earliest=-20m
             | spath input=log path=request_ip output=request_ip
             | search request_ip="${ip}"
             | fields _time, request_ip
