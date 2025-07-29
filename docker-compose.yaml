@@ -11,17 +11,13 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./server/db/db.sql:/docker-entrypoint-initdb.d/db.sql
+      - ./server_express/src/database/db.sql:/docker-entrypoint-initdb.d/db.sql
     networks:
       server_net:
         ipv4_address: 192.168.102.3
 
   server:
     build: ./server_express
-    container_name: server
-    cap_add:
-      - NET_ADMIN
-    build: ./server
     depends_on:
       - db
       - firewall
@@ -32,13 +28,23 @@ services:
       DB_PASSWORD: password
     ports:
       - "8000:8000"
+    volumes:
+      - ./server_express/src/logs:/app/logs
     networks:
-      server_net:
-        ipv4_address: 192.168.102.2
-    entrypoint: ["/bin/sh", "-c", "ip route replace default via 192.168.102.254 && exec node ./dist/app.js"]    
+      - app-network
+      - wifi
 
-  client:
-    build: ./client
+  client_1:
+    build: ./clients/client_1
+    depends_on:
+      - server
+    networks:
+      - app-network
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  client_2:
+    build: ./clients/client_2
     depends_on:
       - server
       - firewall
@@ -50,8 +56,27 @@ services:
       - NET_ADMIN    
     entrypoint: ["/bin/sh", "-c", "ip route replace default via 192.168.101.254 && exec python -u client.py"]
     environment:
-      HTTP_PROXY:  http://192.168.103.2:3128
-      HTTPS_PROXY: http://192.168.103.2:3128
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  client_3:
+    build: ./clients/client_3
+    depends_on:
+      - server
+    networks:
+      - wifi
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  client_4:
+    build: ./clients/client_4
+    depends_on:
+      - server
+    networks:
+      - wifi
+    environment:
+      HTTP_PROXY:  http://squid:3128
+      HTTPS_PROXY: http://squid:3128
+  
   snort:
     build: ./snort
     platform: linux/amd64  
@@ -82,31 +107,10 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
       - ./squid/logs:/var/log/squid
-    #user: "13:13"  
+    user: "13:13"  
     networks:
-      squid_net:
-        ipv4_address: 192.168.103.2
-    depends_on:
-      - firewall
-    entrypoint: ["/bin/sh", "-c", "ip route replace default via 192.168.103.254 && exec squid -N -f /etc/squid/squid.conf -n squid"]
-
-  firewall:
-    build:
-      context: .
-      dockerfile: dockerfile.firewall
-    container_name: firewall
-    privileged: true
-    networks:
-      client_net:
-        ipv4_address: 192.168.101.254
-      server_net:
-        ipv4_address: 192.168.102.254
-      squid_net:
-        ipv4_address: 192.168.103.254
-    volumes:
-      - ./firewall.sh:/firewall.sh:ro
-    command: ["/bin/sh", "/firewall.sh"]
-
+      - app-network
+      - wifi
 
   splunk:
     platform: linux/amd64
@@ -140,6 +144,7 @@ services:
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./squid/logs:/var/log/squid:ro
+      - ./server_express/src/logs:/app/logs
       - snort-logs:/var/log/snort:ro
       - /run/ulogd:/run/ulogd:ro 
     networks:
@@ -151,12 +156,18 @@ volumes:
   splunk-data:
   uf-var:
   snort-logs:
+
 networks:
-  client_net:
-    external: true
-  server_net:
-    external: true
-  squid_net:
-    external: true
-  macvlan_net:
-    external: true
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+    driver_opts:
+      com.docker.network.enable_ipv4: "true"
+      com.docker.network.enable_ipv6: "false"
+  wifi:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

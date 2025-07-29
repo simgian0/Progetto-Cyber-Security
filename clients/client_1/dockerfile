@@ -7,4 +7,4 @@ COPY . /app
 RUN apt-get update && apt-get install -y iproute2 iputils-ping curl netcat && rm -rf /var/lib/apt/lists/*
 RUN pip install requests 
 
-CMD ["python", "client.py"]
+CMD ["python", "-u", "client.py"]
