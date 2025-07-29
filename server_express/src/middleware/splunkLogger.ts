@@ -51,7 +51,7 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
             headers: req.headers,
             body: responseBody,
             user_id: req.headers['x-user-id'] || null,
-            user_name : req.body.name || ' ',
+            user_name : req.body.user_name || ' ',
             user_role : req.body.role || ' ',
             user_team : req.body.team || ' ',
             status: statusFromBody,

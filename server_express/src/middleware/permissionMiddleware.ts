@@ -29,14 +29,16 @@ class permissionMiddleware{
                     const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'User not found');
                     return res.json({ error: message });
                 }
+                
+                req.body.user_name = user.name;
+                req.body.role = user.role;
+                req.body.team = user.team;
 
                 // Verifica se il ruolo dell'utente corrisponde a uno dei ruoli richiesti
                 if (requiredRoles.includes(user.role)) {
                     req.body.score = calculateScore(req.body.score, 'add', 10);
                     console.log(`[TRUST][PERMISSION] Bonus checkRole +10 applied. New score: ${req.body.score}`);
-                    req.body.name = user.name;
-                    req.body.role = user.role;
-                    req.body.team = user.team;
+                    
                     return next();  // Ruolo valido, continua l'elaborazione
                 } else {
                     // Se l'utente non ha il permesso, restituisci un errore
