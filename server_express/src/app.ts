@@ -6,6 +6,10 @@ import { blockListMiddleware } from './middleware/blockList';
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
+import  {generalRequestStatusforIP}  from "./middleware/splunkQueryLog";
+import { scoreInitMiddleware, scoreTrustAnalysisMiddleware, scoreTrustNetworkAnalysisMiddleware } from './middleware/scoreCheck';
+import { scoreOutsideWorkHours } from './middleware/scoreCheck';
+import { scoreTrustDosAnalysisMiddleware } from './middleware/scoreCheck';
 dotenv.config();
 
 const app = express();
@@ -30,13 +34,23 @@ connectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// TO DO: Middleware Controllo fiducia richiesta
+// serve per mantenere x-forwarded-for
+app.set('trust proxy', true);
 
 // Middleware Splunk logger
 app.use(splunkLogger);
 
 // Middleware per bloccare IP
 app.use(blockListMiddleware);
+
+// Middleware per modificare lo score
+app.use(scoreInitMiddleware); // inizializza a 50 lo score
+app.use(scoreTrustAnalysisMiddleware); // abbassa/alza lo score in base all'avg score di ip, della subnet e del mac address delle ultime 100 richieste
+app.use(scoreTrustNetworkAnalysisMiddleware); // abbassa/alza lo score in base alla network in cui si fa la richiesta
+app.use(scoreOutsideWorkHours); //abbassa lo score in base a un tot di richieste giornaliere fatte fuori orario di lavoro, per un multiplo
+app.use(scoreTrustDosAnalysisMiddleware)
+
+app.use(generalRequestStatusforIP);
 
 // Use the routes defined in the routes file
 app.use(router);

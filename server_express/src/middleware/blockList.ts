@@ -7,7 +7,8 @@ import { ErrorMessage } from "../factory/Messages";
 const errorMessageFactory: errorFactory = new errorFactory();
 
 export const blockListMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const clientIP = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || '';
     console.log("req ip: ", clientIP);
     if (!clientIP) {
     const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized, 'IP not Found');
