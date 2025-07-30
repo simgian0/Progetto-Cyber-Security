@@ -1,8 +1,9 @@
-# ─── Log e runtime ────────────────────────────────────────
+# Logs
 squid/logs/
 snort/logs/
 *.pid
 *.log
+*.env
 
 # Dependency directories
 /server_express/node_modules

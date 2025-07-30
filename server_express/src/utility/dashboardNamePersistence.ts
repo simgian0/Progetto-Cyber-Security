@@ -4,126 +4,126 @@ import path from 'path';
 import lockfile from 'proper-lockfile';
 import { ensureLogDirectoryExists } from '../middleware/splunkLogger';
 
+// Manage read/write on dashboard file
 export class DashboardPersistenceService {
-  private readonly DASHBOARDS_FILE = path.join('/app/logs', 'dashboards.json');
-  private dashboardsCache: { [key: string]: boolean } = {};
-  
-  constructor() {
-    ensureLogDirectoryExists(this.DASHBOARDS_FILE);
-    this.initialize();
-    
-  }
+    private readonly DASHBOARDS_FILE = path.join('/app/logs', 'dashboards.json');
+    private dashboardsCache: { [key: string]: boolean } = {};
 
-  // Inizializzazione asincrona
-  private async initialize(): Promise<void> {
-    await this.initializeDashboardFile();
-  }
-
-  // Crea il file se non esiste
-  private async initializeDashboardFile(): Promise<void> {
-    try {
-      await fsp.access(this.DASHBOARDS_FILE);
-    } catch {
-      await this.withLock(async () => {
-        await fsp.writeFile(this.DASHBOARDS_FILE, JSON.stringify({ dashboards: {} }, null, 2));
-      });
+    constructor() {
+        ensureLogDirectoryExists(this.DASHBOARDS_FILE);
+        this.initialize();
     }
-    await this.loadDashboardsCache();
-  }
 
-  // Esegui operazione con lock
-  private async withLock<T>(fn: () => Promise<T>, options?: lockfile.LockOptions): Promise<T> {
-    const release = await lockfile.lock(this.DASHBOARDS_FILE, {
-      retries: {
-        retries: 5,
-        minTimeout: 100,
-        maxTimeout: 500
-      },
-      ...options
-    });
-
-    try {
-      // Ricarica sempre la cache più recente prima di operare
-      await this.loadDashboardsCache();
-      return await fn();
-    } finally {
-      await release();
+    // Asynchronous initialization
+    private async initialize(): Promise<void> {
+        await this.initializeDashboardFile();
     }
-  }
 
-  // Carica in memoria il contenuto del file (senza lock, da usare solo dentro withLock)
-  private async loadDashboardsCache(): Promise<void> {
-    try {
-      const data = await fsp.readFile(this.DASHBOARDS_FILE, 'utf8');
-      const jsonData = JSON.parse(data);
-      
-      // Unisci con la cache esistente invece di sovrascrivere
-      this.dashboardsCache = {
-        ...this.dashboardsCache,
-        ...(jsonData.dashboards || {})
-      };
-    } catch (error) {
-      console.error('Error loading dashboards file:', error);
-      this.dashboardsCache = {};
+    // Create the file if it doesn't exist
+    private async initializeDashboardFile(): Promise<void> {
+        try {
+            await fsp.access(this.DASHBOARDS_FILE);
+        } catch {
+            await this.withLock(async () => {
+                await fsp.writeFile(this.DASHBOARDS_FILE, JSON.stringify({ dashboards: {} }, null, 2));
+            });
+        }
+        await this.loadDashboardsCache();
     }
-  }
 
-  // Scrive sul file con lock e merge degli aggiornamenti
-  async writeDashboardsFile(updates: { [key: string]: boolean } = {}): Promise<void> {
-    await this.withLock(async () => {
-      try {
-        // Carica lo stato più recente dal file
-        const currentData = await this.loadCurrentFileData();
-        
-        // Unisci gli aggiornamenti
-        const mergedData = {
-          dashboards: {
-            ...currentData.dashboards,
-            ...updates
-          }
-        };
+    // Utility to wrap an operation with a file lock
+    private async withLock<T>(fn: () => Promise<T>, options?: lockfile.LockOptions): Promise<T> {
+        const release = await lockfile.lock(this.DASHBOARDS_FILE, {
+            retries: {
+                retries: 5,
+                minTimeout: 100,
+                maxTimeout: 500
+            },
+            ...options
+        });
 
-        // Aggiorna cache e file
-        this.dashboardsCache = mergedData.dashboards;
-        await fsp.writeFile(
-          this.DASHBOARDS_FILE,
-          JSON.stringify(mergedData, null, 2)
-        );
-      } catch (error) {
-        console.error('Error writing dashboards file:', error);
-        throw error;
-      }
-    }, { 
-      // Opzioni più aggressive per le scritture
-      retries: {
-        retries: 10,
-        minTimeout: 200,
-        maxTimeout: 1000
-      }
-    });
-  }
-
-  // Carica i dati correnti dal file (da usare solo dentro withLock)
-  private async loadCurrentFileData(): Promise<{ dashboards: { [key: string]: boolean } }> {
-    try {
-      const data = await fsp.readFile(this.DASHBOARDS_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch {
-      return { dashboards: {} };
+        try {
+            // Always refresh the cache before operating
+            await this.loadDashboardsCache();
+            return await fn();
+        } finally {
+            await release();
+        }
     }
-  }
 
-  // Verifica se la dashboard esiste
-  async dashboardExists(dashboardName: string): Promise<boolean> {
-    return !!this.dashboardsCache[dashboardName];
-  }
+    // Load the dashboards file content into memory (used only within locked operations)
+    private async loadDashboardsCache(): Promise<void> {
+        try {
+            const data = await fsp.readFile(this.DASHBOARDS_FILE, 'utf8');
+            const jsonData = JSON.parse(data);
 
-  // Pulisci eventuali lock rimasti (da chiamare all'avvio dell'applicazione)
-  static async cleanupStaleLocks(): Promise<void> {
-    try {
-      await lockfile.unlock(path.resolve(__dirname, 'dashboards.json'));
-    } catch (error) {
-      // Ignora errori se non c'è lock
+            // Merge the new data with existing cache (do not overwrite)
+            this.dashboardsCache = {
+                ...this.dashboardsCache,
+                ...(jsonData.dashboards || {})
+            };
+        } catch (error) {
+            console.error('Error loading dashboards file:', error);
+            this.dashboardsCache = {};
+        }
     }
-  }
+
+    // Write updates to the dashboards file using lock and safe merging
+    async writeDashboardsFile(updates: { [key: string]: boolean } = {}): Promise<void> {
+        await this.withLock(async () => {
+            try {
+                // Load the most up-to-date file content
+                const currentData = await this.loadCurrentFileData();
+
+                // Merge existing data with updates
+                const mergedData = {
+                    dashboards: {
+                        ...currentData.dashboards,
+                        ...updates
+                    }
+                };
+
+                // Update in-memory cache and write to file
+                this.dashboardsCache = mergedData.dashboards;
+                await fsp.writeFile(
+                    this.DASHBOARDS_FILE,
+                    JSON.stringify(mergedData, null, 2)
+                );
+            } catch (error) {
+                console.error('Error writing dashboards file:', error);
+                throw error;
+            }
+        }, {
+            // Retry more aggressively on write conflicts
+            retries: {
+                retries: 10,
+                minTimeout: 200,
+                maxTimeout: 1000
+            }
+        });
+    }
+
+    // Load the full dashboards file from disk (should only be called inside a lock)
+    private async loadCurrentFileData(): Promise<{ dashboards: { [key: string]: boolean } }> {
+        try {
+            const data = await fsp.readFile(this.DASHBOARDS_FILE, 'utf8');
+            return JSON.parse(data);
+        } catch {
+            return { dashboards: {} };
+        }
+    }
+
+    // Check whether a dashboard exists in memory
+    async dashboardExists(dashboardName: string): Promise<boolean> {
+        return !!this.dashboardsCache[dashboardName];
+    }
+
+    // Clean up old locks on startup (to avoid being blocked by leftover lock files)
+    static async cleanupStaleLocks(): Promise<void> {
+        try {
+            await lockfile.unlock(path.resolve(__dirname, 'dashboards.json'));
+        } catch (error) {
+            // Ignore error if no lock exists
+        }
+    }
 }

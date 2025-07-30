@@ -1,4 +1,4 @@
-/**Interfaccia per il client API: */
+/**Interface client API: */
 
 export interface ISplunkAPI {
   callAPI(

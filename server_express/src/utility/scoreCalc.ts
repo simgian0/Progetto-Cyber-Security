@@ -1,7 +1,7 @@
 export function calculateScore(score: number, operation: string, value: number): number {
     let result: number;
 
-    // Determina l'operazione da eseguire
+    // Determine the operation to perform
     switch (operation.toLowerCase()) {
         case 'multiply':
             result = score * value;
@@ -22,13 +22,13 @@ export function calculateScore(score: number, operation: string, value: number):
             throw new Error('Invalid operation. Please use "multiply", "divide", "add", or "subtract".');
     }
 
-    // Impostare il risultato ai limiti se è minore di 0 o maggiore di 100
+    // Clamp the result to a minimum of 1 and a maximum of 100
     if (result == null || result <= 0) {
         result = 1;
     } else if (result > 100) {
         result = 100;
     }
 
-    // Ritorna il risultato del calcolo
+    // Return the calculated score
     return result;
 }

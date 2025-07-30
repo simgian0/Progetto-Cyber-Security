@@ -1,5 +1,9 @@
 import { SplunkAPIClient } from '../SplunkAPIClient';
 
+/**
+ * Service class responsible for executing search queries
+ * to Splunk via the SplunkAPIClient.
+ */
 export class SearchService {
     private apiClient: SplunkAPIClient;
 
@@ -7,10 +11,9 @@ export class SearchService {
         this.apiClient = new SplunkAPIClient();
     }
 
-    //TO IMPROVE: Passare la query come parametro se vanno fatte molte query differenziate
+    // General-purpose search for logs based on IP and status.
     async searchLogs(index: string, userOrIp: string, status: string) {
 
-        //TO IMPROVE: Vedere se è meglio usare endpoint = `/services/search/jobs` con parametro exec_mode = oneshot
         const endpoint = `/services/search/jobs/export`;
         const query = `
             search index=${index}
@@ -28,6 +31,7 @@ export class SearchService {
         return this.apiClient.callAPI('POST', endpoint, params);
     }
 
+    // Returns the count of requests grouped by HTTP status code for a specific IP within the last hour.
     async searchStatusByIp(index: string, ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
@@ -72,7 +76,7 @@ export class SearchService {
         return this.apiClient.callAPI('POST', endpoint, params);
     }*/
 
-    // fa una tabella con avg score della subnet di riferimento
+    // Returns the average score for a given subnet.
     async getAvgScoreBySubnet(subnet: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
@@ -95,7 +99,7 @@ export class SearchService {
         return this.apiClient.callAPI('POST', endpoint, params);
     }
 
-    // fa una tabella con avg score del mac di riferimento
+    // Returns the average score for a given MAC address.
     async getAvgScoreByMac(mac: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
@@ -118,7 +122,7 @@ export class SearchService {
         return this.apiClient.callAPI('POST', endpoint, params);
     }
 
-    // Fa una tabella con avg score dell'IP specificato
+    // Returns the average score for a specific IP address.
     async getAvgScoreByIp(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
@@ -141,7 +145,10 @@ export class SearchService {
         return this.apiClient.callAPI('POST', endpoint, params);
     }
 
-        async searchOutsideWorkHours(ip: string) {
+    /**
+     * Returns the number of requests made by an IP outside working hours (based on last 24 hours).
+     */
+    async searchOutsideWorkHours(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
             search index=squid earliest=-24h
@@ -158,8 +165,8 @@ export class SearchService {
 
         return this.apiClient.callAPI('POST', endpoint, params);
     }
-    
-    //Query che ritorna il tempo medio complessivo tra una richiesta e la sua successiva per un totale delle 20 ultime richieste
+
+    // Calculates the average time between the last 25 requests from a specific IP.
     async searchDosAttackbyAvgBetweenRequest(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
@@ -184,6 +191,7 @@ export class SearchService {
         return this.apiClient.callAPI('POST', endpoint, params);
     }
 
+    // Evaluates how many of the last 25 requests were HTTP 403 (forbidden).
     async searchDosAttackbyNumberOfNearBadRequest(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
