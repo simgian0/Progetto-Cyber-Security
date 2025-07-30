@@ -48,7 +48,7 @@ app.use(scoreInitMiddleware); // inizializza a 50 lo score
 app.use(scoreTrustAnalysisMiddleware); // abbassa/alza lo score in base all'avg score di ip, della subnet e del mac address delle ultime 100 richieste
 app.use(scoreTrustNetworkAnalysisMiddleware); // abbassa/alza lo score in base alla network in cui si fa la richiesta
 app.use(scoreOutsideWorkHours); //abbassa lo score in base a un tot di richieste giornaliere fatte fuori orario di lavoro, per un multiplo
-app.use(scoreTrustDosAnalysisMiddleware)
+app.use(scoreTrustDosAnalysisMiddleware);
 
 app.use(generalRequestStatusforIP);
 
