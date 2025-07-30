@@ -144,13 +144,12 @@ export class SearchService {
         async searchOutsideWorkHours(ip: string) {
         const endpoint = '/services/search/jobs/export';
         const query = `
-            search index=express earliest=-24h
-            | spath input=log path=request_ip output=request_ip 
-            | search request_ip="${ip}" 
-            | eval hour=strftime(_time, "%H") 
-            | where tonumber(hour) < 8 OR tonumber(hour) >= 20
-            | stats count by request_ip
-            | table request_ip, count
+            search index=squid earliest=-24h
+            | spath input=log path=allowed_hours output=allowed_hours
+            | spath input=log path=client_ip output=client_ip
+            | search allowed_hours=false client_ip=${ip}
+            | stats count by client_ip
+            | table client_ip, count
         `;
 
         const params = new URLSearchParams();
