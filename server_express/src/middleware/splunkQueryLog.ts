@@ -17,7 +17,18 @@ const errorMessageFactory: errorFactory = new errorFactory();
  export const generalRequestStatusforIP = async(req: Request, res: Response, next: NextFunction) => {
   //TO DO: Con più client modificare IP (x-forwarded-for)
   //const userOrIp = req.headers['x-user-id'] as string || req.ip as string;
-  const Ip = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
+  //const Ip = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
+
+  const forwarded = req.headers['x-forwarded-for'];
+    const Ip = typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : req.ip?.startsWith('::ffff:')
+            ? req.ip.replace('::ffff:', '')
+            : req.ip || '';
+    
+    if (!Ip || typeof req.body.score !== 'number') {
+        return next();
+    }
   console.log("REQUEST IP:", Ip)
 
   const searchService = new SearchService();
@@ -99,7 +110,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
         <search>
           <query>index=express | spath input=log path=request_ip output=request_ip | spath input=log path=user_role output=user_role | search request_ip="${Ip}" | where user_role != " " | stats latest(user_role) as Ruolo</query>
         </search>
-        <option name="height">113</option>
+        <option name="height">100</option>
         <option name="trellis.enabled">1</option>
       </single>
       <single>
@@ -107,7 +118,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
         <search>
           <query>index=express | spath input=log path=request_ip output=request_ip | spath input=log path=user_team output=user_team | search request_ip="${Ip}" | where user_team != " " | stats latest(user_team) as Team</query>
         </search>
-        <option name="height">96</option>
+        <option name="height">100</option>
         <option name="trellis.enabled">1</option>
       </single>
     </panel>
@@ -318,57 +329,3 @@ const errorMessageFactory: errorFactory = new errorFactory();
 
   };
 };
-
-
- /*export const statusforAllIP = async(req: Request, res: Response, next: NextFunction) => {
-  //const userOrIp = req.headers['x-user-id'] as string || req.ip as string;
-  const Ip = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
-
-  const searchService = new SearchService();
-  const dashboardService = new DashboardService();
-  console.log('DENTRO SPLUNKMIDDLEWARE......')
-
-  try {
-    // 1. Search logs
-    const logs = await searchService.searchStatusByIp('express', Ip);
-    console.log('SPLUNK QUERY: Splunk query results:', logs, "\n")
-
-    // 2. Calculate stats
-    const logsArray = Array.isArray(logs) ? logs : [];
-
-    const stats = logsArray.map(entry => ({
-     status: entry.result.status,
-      count: parseInt(entry.result.count, 10)
-    }));
-
-    console.log(`CALCULATE STATS FOR ${Ip}:`, stats);
-/*
-    // 3. Create dashboard
-    const dashboardXML = `
-<dashboard>
-  <label>User ${Ip} Error Stats</label>
-  <row>
-    <panel>
-      <title>Error Counts</title>
-      <chart>
-        <searchString>search index=squid (user="${Ip}" OR ip_address="${Ip}") status="error" | stats count by status</searchString>
-        <option name="charting.chart">pie</option>
-      </chart>
-    </panel>
-  </row>
-</dashboard>
-    `;
-
-    await dashboardService.createDashboard('admin', 'search', `user_${Ip}_errors`, dashboardXML);
-
-    // Inietta stats per PDP
-    (req as any).errorStats = stats;
-
-    next();
-
-  } catch (error) {
-    console.error('Splunk middleware error:', error);
-    //res.status(500).json({ error: 'Internal server error during Splunk processing' });
-    next(); // continua senza bloccare la request in caso fallisca
-  }
-};*/
