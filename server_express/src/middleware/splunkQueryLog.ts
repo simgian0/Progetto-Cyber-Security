@@ -141,7 +141,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           | xyseries day time_range count</query>
           <earliest>-7d@d</earliest>
           <latest>now</latest>
-          <refresh>1m</refresh>
+          <refresh>30s</refresh>
         </search>
         <option name="charting.axisTitleX.text">Giorno</option>
         <option name="charting.axisTitleY.text">Numero Richieste</option>
@@ -161,7 +161,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           <query>index=score | spath input=log path=request_ip output=request_ip  | spath input=log path=score output=score | search request_ip="${Ip}" | where isnotnull(score) AND score != "" | timechart span=2m latest(score) as score</query>
           <earliest>-1h</earliest>
           <latest>now</latest>
-          <refresh>1m</refresh>
+          <refresh>30s</refresh>
         </search>
         <option name="charting.axisLabelsY2.majorUnit">10</option>
         <option name="charting.axisTitleX.text">Tempo</option>
@@ -192,7 +192,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           </query>
           <earliest>-15m</earliest>
           <latest>now</latest>
-          <refresh>1m</refresh>
+          <refresh>30s</refresh>
         </search>
         <option name="colorMode">block</option>
         <option name="rangeColors">["0xd41f1f","0xe98300","0xf8be34","0x118832","0x003f24"]</option>
@@ -210,7 +210,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           <earliest>-15m</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
-          <refresh>1m</refresh>
+          <refresh>30s</refresh>
           <refreshType>delay</refreshType>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -264,7 +264,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           | stats count by status_type</query>
           <earliest>-7d@d</earliest>
           <latest>now</latest>
-          <refresh>1m</refresh>
+          <refresh>30s</refresh>
         </search>
         <option name="charting.chart">pie</option>
         <option name="charting.drilldown">none</option>
@@ -300,7 +300,7 @@ const errorMessageFactory: errorFactory = new errorFactory();
           | head 10</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
-          <refresh>1m</refresh>
+          <refresh>30s</refresh>
         </search>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
