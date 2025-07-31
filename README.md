@@ -44,6 +44,7 @@
     - [Policy che analizzano il metodo ed i permessi](#policy-che-analizzano-il-metodo-ed-i-permessi)
   - [Installazione](#installazione)
   - [Avvio](#avvio)
+    - [Comportamento dei client](#comportamento-dei-client)
   - [Autori](#autori)
   
 ## Introduzione e specifiche progetto
@@ -112,7 +113,7 @@ Tutti i componenti della rete aziendale, siano essi interni o esterni, sono moni
 
 2. **Controlli di Sicurezza in Tempo Reale (PDP e PEP)**:
    - Ogni richiesta di accesso alle risorse è sottoposta a controlli di **autenticazione**, **autorizzazione** e **monitoraggio** in tempo reale. L'**analisi della fiducia** modifica dinamicamente lo **score di fiducia** di ogni richiesta, penalizzando richieste da reti non sicure o provenienti da IP con un comportamento sospetto.
-   - Le richieste il cui punteggio è basso (<30) verranno bloccate.
+   - Le richieste il cui punteggio è basso (<40) verranno bloccate.
 
 ## Policy implementate
 
@@ -127,7 +128,8 @@ Tale punteggio parte sempre da 50 punti e può arrivare ad un minimo di 1 fino a
   Questa policy applica una penalità se il client effettua un numero significativo di richieste fuori dall'orario lavorativo standard (08:00–20:00). Ogni 10 richieste fuori orario, lo score del client viene ridotto di 0,5, con una penalità massima di 10.
  
 2. **Rifiuto delle richieste degli ip bloccati**  
-  Le richieste effettuate dagli ip inseriti all'interno di una **blocklist** sono bloccate e ignorate.
+  - Le richieste effettuate dagli ip inseriti all'interno di una **blocklist** sono bloccate e ignorate.
+  - Le richieste provenienti da ip sconosciuti sono bloccati da Squid.
  
 3. **Penalità per richieste effettuate da reti diverse dalla rete ethernet o wi-fi aziendali**  
   - Le richieste effettuate dalla rete wifi aziendale (172.20.0.0/16) abbassano lo score di fiducia di 5 punti.
@@ -249,7 +251,7 @@ Per consentire il corretto funzionamento di Splunk, dopo l'avvio dei container, 
   - Andare su Impostazioni -> Input Dati -> Raccolta eventi HTTP o HTTPS -> Impostazioni Globali
   - Togliere la spunta "Abilita SSL" e salvare
  
- 
+
 **Dashboard**  
 Al momento dell'avvio verranno effettuato delle API a Splunk per la creazione di Dashboard relative ai vari client.
 Queste saranno visualizzabili accedendo all'app "Search and Reporting" -> Dashboard
@@ -272,6 +274,16 @@ All'interno dell'app "Search and Reporting" alla voce "Ricerca" è possibile lan
 <div align="center">
   <img src="./README/search.png" width="800" />
 </div>
+
+
+### Comportamento dei client
+
+I client sono stati configurati per il test con i seguenti comportamenti:
+
+- **Client 1 e Client 2**: Appartenenti alla rete **ethernet aziendale**, compiono principalmente azioni che tendono ad **aumentare il punteggio** sia proprio che della **subnet**. Questi client generano richieste che favoriscono l'incremento della fiducia, come operazioni di lettura e scrittura consentite all'interno della rete aziendale.
+
+- **Client 3 e Client 4**: Appartenenti alla rete **Wi-Fi aziendale**, compiono principalmente azioni che tendono a **ridurre il punteggio** proprio e della **subnet**. Questi client generano richieste che abbassano il punteggio a causa di operazioni sbagliate e in reti meno sicure. Pertanto, alcune richieste che potrebbero andare a buon fine, a causa del basso punteggio, verranno poi **bloccate dall'enforcer**.
+
 
 ## Autori
 Giano Simone - s1116146@studenti.univpm.it

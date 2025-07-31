@@ -74,7 +74,7 @@ def get_random_payload(user_id, modify_name_only=False, random_team=False):
             "texts": '[{"x":1,"y":1,"content":"AutoGen","font_size":10,"color":"gray"}]'
         }
 
-# test sequence user 18, bad sequence
+# test sequence user 18, bad sequence + dos
 TEST_SEQUENCE = [
     {
         "action": "POST", # not valid
@@ -90,6 +90,12 @@ TEST_SEQUENCE = [
     },
     {
         "action": "DELETE", # not valid
+        "drawing_id": lambda: random.choice(TEAM_3_DRAWINGS_IDS),
+        "payload": None,
+        "user_id": 18
+    },
+    {
+        "action": "GET_ONE",
         "drawing_id": lambda: random.choice(TEAM_3_DRAWINGS_IDS),
         "payload": None,
         "user_id": 18
@@ -139,7 +145,7 @@ def run():
             except Exception as e:
                 print(f"[ERROR] {action} fallita: {e}")
 
-            time.sleep(10)
+            time.sleep(5) #DOS allert
 
 if __name__ == "__main__":
     run()

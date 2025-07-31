@@ -11,9 +11,9 @@ const errorMessageFactory = new errorFactory();
 export const enforceScoreMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const score = req.body.score;
     if (typeof score === 'number' && !isNaN(score)) {
-        if (score < 30) {
-            const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized,`Blocked: score too low (${score} < 30)`);
-            console.warn(`[ENFORCEMENT] Richiesta bloccata: score ${score} < 30`);
+        if (score < 40) {
+            const message = errorMessageFactory.createMessage(ErrorMessage.notAuthorized,`Blocked: score too low (${score} < 40)`);
+            console.warn(`[ENFORCEMENT] Richiesta bloccata: score ${score} < 40`);
             return res.json({ error: message });
         }
     }
