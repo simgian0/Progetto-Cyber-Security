@@ -1,7 +1,7 @@
 [
     {
     "name": "Squid_OffHours_Alert",
-    "search": "index=squid | spath input=log | search log.allowed_hours=false",
+    "search": "index=squid |spath input=log path=allowed_hours output=allowed_hours | search allowed_hours=false",
     "cron_schedule": "*/5 * * * *",
     "dispatch.earliest_time": "-20m",
     "dispatch.latest_time": "now",
@@ -27,10 +27,8 @@
     "alert_type": "number of events",
     "alert_comparator": "greater than",
     "alert.severity": "3",
-    "action.email": "1",
+    "action.email": "0",
     "action.webhook": "0",
-    "action.email.to": "selomat244@coursora.com",
-    "action.email.subject": "Alert attivo: Squid",
     "alert.track": "1"
   }
 ]
