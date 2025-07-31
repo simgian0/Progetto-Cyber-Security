@@ -1,8 +1,9 @@
-# ─── Log e runtime ────────────────────────────────────────
+# Logs
 squid/logs/
 snort/logs/
 *.pid
 *.log
+*.env
 src/logs/alertsName.json
 src/logs/dashboards.json
 

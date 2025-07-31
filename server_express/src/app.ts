@@ -6,15 +6,19 @@ import { blockListMiddleware } from './middleware/blockList';
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
-import  {generalRequestStatusforIP}  from "./middleware/splunkQueryLog";
-import { scoreInitMiddleware, scoreTrustAnalysisMiddleware, scoreTrustNetworkAnalysisMiddleware } from './middleware/scoreCheck';
-import { scoreOutsideWorkHours } from './middleware/scoreCheck';
-import { scoreTrustDosAnalysisMiddleware } from './middleware/scoreCheck';
+import  {splunkDashboard}  from "./middleware/splunkQueryLog";
+import { 
+    scoreInitMiddleware, 
+    scoreTrustAnalysisMiddleware, 
+    scoreTrustNetworkAnalysisMiddleware, 
+    scoreOutsideWorkHours, 
+    scoreTrustDosAnalysisMiddleware 
+} from './middleware/scoreCheck';
 import { AlertService } from './api/endpoints/AlertService';
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT || 8000); // Set server port, default to 3000 if not specified
+const PORT = Number(process.env.PORT || 8000); // Set server port, default to 8000
 const sequelize: Sequelize = Database.getSequelize(); // Get Sequelize instance from the Database class
 
 // Initialize the database connection and start the server
@@ -47,23 +51,23 @@ connectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// serve per mantenere x-forwarded-for
+// Allow Express to use x-forwarded-for headers
 app.set('trust proxy', true);
 
-// Middleware Splunk logger
+// Middleware that logs every request to Splunk
 app.use(splunkLogger);
 
-// Middleware per bloccare IP
+// Block traffic from blacklisted IPs
 app.use(blockListMiddleware);
 
-// Middleware per modificare lo score
-app.use(scoreInitMiddleware); // inizializza a 50 lo score
-app.use(scoreTrustAnalysisMiddleware); // abbassa/alza lo score in base all'avg score di ip, della subnet e del mac address delle ultime 100 richieste
-app.use(scoreTrustNetworkAnalysisMiddleware); // abbassa/alza lo score in base alla network in cui si fa la richiesta
-app.use(scoreOutsideWorkHours); //abbassa lo score in base a un tot di richieste giornaliere fatte fuori orario di lavoro, per un multiplo
-app.use(scoreTrustDosAnalysisMiddleware)
+// Score middlewares
+app.use(scoreInitMiddleware); // Initialize score for each request
+app.use(scoreTrustAnalysisMiddleware); // Modify score based on trust analysis (avg score from IP/subnet/MAC activity)
+app.use(scoreTrustNetworkAnalysisMiddleware); // Modify score based on known or unknown networks
+app.use(scoreOutsideWorkHours); // Penalize excessive requests outside of working hours
+app.use(scoreTrustDosAnalysisMiddleware); // Penalize requests that seems part of DOS attacks
 
-app.use(generalRequestStatusforIP);
+app.use(splunkDashboard); // Splunk dashboards
 
 // Use the routes defined in the routes file
 app.use(router);

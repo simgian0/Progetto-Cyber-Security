@@ -13,59 +13,29 @@ import { successFactory } from '../factory/SuccessMessage';
 const errorMessageFactory: errorFactory = new errorFactory();
 
 
-
- export const generalRequestStatusforIP = async(req: Request, res: Response, next: NextFunction) => {
-  //TO DO: Con più client modificare IP (x-forwarded-for)
-  //const userOrIp = req.headers['x-user-id'] as string || req.ip as string;
-  //const Ip = req.ip?.startsWith('::ffff:') ? req.ip.replace('::ffff:', '') : req.ip || ''; // trasforma eventuali ipv6 in ipv4
-
-  const forwarded = req.headers['x-forwarded-for'];
+/**
+ * Middleware to generate or update a personalized Splunk dashboard for the current requester's IP.
+ */
+export const splunkDashboard = async (req: Request, res: Response, next: NextFunction) => {
+    const forwarded = req.headers['x-forwarded-for'];
     const Ip = typeof forwarded === 'string'
         ? forwarded.split(',')[0].trim()
         : req.ip?.startsWith('::ffff:')
             ? req.ip.replace('::ffff:', '')
             : req.ip || '';
-    
+
     if (!Ip || typeof req.body.score !== 'number') {
         return next();
     }
-  console.log("REQUEST IP:", Ip)
+    console.log("REQUEST IP:", Ip)
 
-  const searchService = new SearchService();
-  const dashboardService = new DashboardService();
-  console.log('DENTRO SPLUNKMIDDLEWARE......')
+    const searchService = new SearchService();
+    const dashboardService = new DashboardService();
+    console.log('DENTRO SPLUNKMIDDLEWARE......')
 
-  try {
-    /*
-    // 1. Search logs
-    const logs = await searchService.searchLogs('express', Ip, '*'); //La risposta di Splunk REST API /export è una stringa di JSON Lines (oggetti JSON separati da \n)
-    //console.log('SPLUNK QUERY: Splunk query results:',typeof logs, logs)
-
-    // 2. Parse JSON lines string ➔ array
-    const logsArray = typeof logs === 'string'
-      ? logs.trim().split('\n').map(line => JSON.parse(line))
-  :     Array.isArray(logs)
-    ? logs
-    : [];
-
-    // 3. Estrarre il campo result
-   const parsedResults = logsArray.map(entry => entry.result || {});
-   console.log('Parsed results sample:', parsedResults.slice(0,3));
-
-    console.log('SPLUNK QUERY PARSED ARRAY LENGTH:', parsedResults.length);
-    //console.log('First parsed entry:', parsedResults[0]);
-
-    // 2. Calculate stats
-   const stats = parsedResults.reduce((acc, entry) => {
-     const httpStatus = entry.status || 'unknown';
-     acc[httpStatus] = (acc[httpStatus] || 0) + 1;
-     return acc;
-     }, {});
-   console.log(`Error stats for ${Ip}:`, stats);
-
-    */// 3. Create dashboard
-    
-     const dashboardXMLFinale = `<dashboard>
+    try {
+        //Define the XML layout for the Splunk dashboard.
+        const dashboardXMLFinale = `<dashboard>
   <label>Report per IP: ${Ip}</label>
   <description>Dashboard di monitoraggio per l'utente/IP specifico. Include informazioni sull'utente, pattern temporali di attività, score di sicurezza e tipologie di richieste.</description>
   <!-- Sezione Informazioni Utente -->
@@ -311,21 +281,22 @@ const errorMessageFactory: errorFactory = new errorFactory();
     </panel>
   </row>
 </dashboard>`
-    console.log("PRIMA DI CREARE DASHBOARD NUMBERFORNAME ");
+        console.log("PRIMA DI CREARE DASHBOARD NUMBERFORNAME ");
 
-    await dashboardService.createOrUpdateDashboard(Ip,dashboardXMLFinale);
-    
-    console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED ");
-    
-    next();
+        // Create or update the Splunk dashboard for the IP
+        await dashboardService.createOrUpdateDashboard(Ip, dashboardXMLFinale);
 
-  } catch (error: any) {
-    console.error(`Splunk middleware error: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
-     if (error.response) {
-        console.error(`Status: ${error.response.status}`);
-     }
+        console.log("DOPO AVER CREATO DASHBOARD DASHBOARDCREATED ");
+
+        next();
+
+    } catch (error: any) {
+        console.error(`Splunk middleware error: ${error.code || "unknown"} | ${error.message || error.response?.data}`);
+        if (error.response) {
+            console.error(`Status: ${error.response.status}`);
+        }
         const message = errorMessageFactory.createMessage(ErrorMessage.generalError, 'Error with dashboard request');
-    return res.json({ error: message });
+        return res.json({ error: message });
 
-  };
+    };
 };

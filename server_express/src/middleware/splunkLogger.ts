@@ -5,7 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 const LOG_FILE_PATH = path.join('/app/logs', 'server.log');
 const SCORE_LOG_FILE_PATH = path.join('/app/logs', 'score.log');
 
-// Funzione per garantire che la directory esista
+// Ensures that the directory containing the specified file path exists
 export const ensureLogDirectoryExists = (filePath: string) => {
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
@@ -13,12 +13,13 @@ export const ensureLogDirectoryExists = (filePath: string) => {
     }
 };
 
-// estrae subnet
+// Extracts the subnet from an IPv4 address (e.g. "172.20.x.x" → "172.20")
 const extractSubnet = (ip: string): string => {
     const parts = ip.split('.');
     return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : 'unknown';
 };
 
+// Middleware to log request and response details to files (server.log and score.log)
 export const splunkLogger = async (req: Request, res: Response, next: NextFunction) => {
     ensureLogDirectoryExists(LOG_FILE_PATH);
     ensureLogDirectoryExists(SCORE_LOG_FILE_PATH);
@@ -30,8 +31,8 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
 
     const originalJson = res.json.bind(res);
     res.json = (body: any) => {
-        responseBody = body; // salva il contenuto della risposta
-        return originalJson(body); // continua normalmente
+        responseBody = body;
+        return originalJson(body);
     };
 
     res.on('finish', () => {
@@ -43,7 +44,7 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
 
         const numericStatus = parseInt(statusFromBody, 10);
         const type = numericStatus >= 400 ? 'error' : 'normal';
-        // payload per server.log
+        // payload for server.log
         const logPayload = {
             time: new Date().toISOString().replace('T', ' ').substring(0, 19),
             method: req.method,
@@ -59,7 +60,7 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
             type: type
         };
 
-        // Payload per score.log
+        // Payload for score.log if the request had a valid score
         const score = req.body.score;
         if (typeof score === 'number' && !isNaN(score)){
             const subnet = extractSubnet(clientIP);
@@ -67,8 +68,8 @@ export const splunkLogger = async (req: Request, res: Response, next: NextFuncti
                 time: new Date().toISOString().replace('T', ' ').substring(0, 19),
                 score: score,
                 request_ip: clientIP,
-                subnet: subnet, // calcolo uno score del subnet con una media degli score dei subnet
-                mac_address: macAddress // calcolo uno score del mac con una media degli score dei mac
+                subnet: subnet, // Used to compute average score per subnet
+                mac_address: macAddress // Used to compute average score per MAC address
             };
             try {
                 fs.appendFileSync(SCORE_LOG_FILE_PATH, JSON.stringify(scoreLogPayload) + '\n');
