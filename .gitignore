@@ -3,6 +3,9 @@ squid/logs/
 snort/logs/
 *.pid
 *.log
+src/logs/alertsName.json
+src/logs/dashboards.json
+
 
 # Dependency directories
 /server_express/node_modules
