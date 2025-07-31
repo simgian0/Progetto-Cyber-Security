@@ -27,10 +27,8 @@
     "alert_type": "number of events",
     "alert_comparator": "greater than",
     "alert.severity": "3",
-    "action.email": "1",
+    "action.email": "0",
     "action.webhook": "0",
-    "action.email.to": "selomat244@coursora.com",
-    "action.email.subject": "Alert attivo: Squid",
     "alert.track": "1"
   }
 
