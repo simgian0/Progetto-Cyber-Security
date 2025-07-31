@@ -25,16 +25,19 @@ export class requestFormatCheck{
                 return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Drawing name not valid."));
             }
 
-            if(!owner_id || isNaN(Number(owner_id))){
-                req.body.score = calculateScore(req.body.score, 'subtract', 1);
-                return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Owner ID Not Valid"));
+            if(req.method === "POST"){
 
-            }
+                if(!owner_id || isNaN(Number(owner_id))){
+                    req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                    return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Owner ID Not Valid"));
 
-            if(!target_team || this.isStringValid(target_team) || target_team.length > 50){
-                req.body.score = calculateScore(req.body.score, 'subtract', 1);
-                return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Drawing target team Not Valid"));
+                 }
 
+                if(!target_team || !this.isStringValid(target_team) || target_team.length > 50){
+                    req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                    return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Drawing target team Not Valid"));
+
+                }
             }
         }
         next();
