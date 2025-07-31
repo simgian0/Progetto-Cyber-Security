@@ -6,10 +6,19 @@ import { blockListMiddleware } from './middleware/blockList';
 import router from "./routes/routes";
 import * as dotenv from 'dotenv';
 import * as errorMiddleware from "./middleware/errorHandler"
+import  {splunkDashboard}  from "./middleware/splunkQueryLog";
+import { 
+    scoreInitMiddleware, 
+    scoreTrustAnalysisMiddleware, 
+    scoreTrustNetworkAnalysisMiddleware, 
+    scoreOutsideWorkHours, 
+    scoreTrustDosAnalysisMiddleware 
+} from './middleware/scoreCheck';
+import { AlertService } from './api/endpoints/AlertService';
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT || 8000); // Set server port, default to 3000 if not specified
+const PORT = Number(process.env.PORT || 8000); // Set server port, default to 8000
 const sequelize: Sequelize = Database.getSequelize(); // Get Sequelize instance from the Database class
 
 // Initialize the database connection and start the server
@@ -22,21 +31,43 @@ const connectDB = async () => {
         console.error('Error connecting to the database:', error);
     }
 };
+//Send a request to create an alert in Splunk.
+const alertSetting = async() =>{
+    const alert = new AlertService();
+    try{
+        await alert.setAlerts()
+    } catch(error){
+        console.error('Error creating setting for alerts:', error);
+    }
+
+}
 
 // Call the function to connect to the database
 connectDB();
+
+
 
 // Middleware to parse JSON and URL-encoded request bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// TO DO: Middleware Controllo fiducia richiesta
+// Allow Express to use x-forwarded-for headers
+app.set('trust proxy', true);
 
-// Middleware Splunk logger
+// Middleware that logs every request to Splunk
 app.use(splunkLogger);
 
-// Middleware per bloccare IP
+// Block traffic from blacklisted IPs
 app.use(blockListMiddleware);
+
+// Score middlewares
+app.use(scoreInitMiddleware); // Initialize score for each request
+app.use(scoreTrustAnalysisMiddleware); // Modify score based on trust analysis (avg score from IP/subnet/MAC activity)
+app.use(scoreTrustNetworkAnalysisMiddleware); // Modify score based on known or unknown networks
+app.use(scoreOutsideWorkHours); // Penalize excessive requests outside of working hours
+app.use(scoreTrustDosAnalysisMiddleware); // Penalize requests that seems part of DOS attacks
+
+app.use(splunkDashboard); // Splunk dashboards
 
 // Use the routes defined in the routes file
 app.use(router);
@@ -51,3 +82,9 @@ app.use(errorMiddleware.ErrorHandler);
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
+
+//Call the function to set the alerts
+setTimeout(() => {
+    console.log('⚙️  Task post-avvio eseguito dopo 20 secondi');
+    alertSetting();
+}, 180000);
