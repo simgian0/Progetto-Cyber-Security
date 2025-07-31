@@ -8,7 +8,6 @@ import { DashboardPersistenceService } from '../../utility/dashboardNamePersiste
 
 export class DashboardService {
   private apiClient: SplunkAPIClient;
-  private static dashboardCreated: boolean = false;
   static increasedNumberforName: number = 1;
 
   constructor() {

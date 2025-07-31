@@ -10,6 +10,7 @@ import  {generalRequestStatusforIP}  from "./middleware/splunkQueryLog";
 import { scoreInitMiddleware, scoreTrustAnalysisMiddleware, scoreTrustNetworkAnalysisMiddleware } from './middleware/scoreCheck';
 import { scoreOutsideWorkHours } from './middleware/scoreCheck';
 import { scoreTrustDosAnalysisMiddleware } from './middleware/scoreCheck';
+import { AlertService } from './api/endpoints/AlertService';
 dotenv.config();
 
 const app = express();
@@ -27,8 +28,20 @@ const connectDB = async () => {
     }
 };
 
+const alertSetting = async() =>{
+    const alert = new AlertService();
+    try{
+        await alert.setAlerts()
+    } catch(error){
+        console.error('Error creating setting for alerts:', error);
+    }
+
+}
+
 // Call the function to connect to the database
 connectDB();
+
+
 
 // Middleware to parse JSON and URL-encoded request bodies
 app.use(express.json());
@@ -65,3 +78,9 @@ app.use(errorMiddleware.ErrorHandler);
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
+
+//Call the function to set the alerts
+setTimeout(() => {
+    console.log('⚙️  Task post-avvio eseguito dopo 20 secondi');
+    alertSetting();
+}, 180000);
