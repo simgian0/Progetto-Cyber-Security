@@ -1,7 +1,7 @@
 [
     {
     "name": "Squid_OffHours_Alert",
-    "search": "index=squid | spath input=log | search log.allowed_hours=false",
+    "search": "index=squid |spath input=log path=allowed_hours output=allowed_hours | search allowed_hours=false",
     "cron_schedule": "*/5 * * * *",
     "dispatch.earliest_time": "-20m",
     "dispatch.latest_time": "now",
