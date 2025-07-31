@@ -17,7 +17,7 @@
   },
   {
     "name": "Error403_Alert",
-    "search": "index=squid | spath input=log | search log.status=403",
+    "search": "index=express | spath input=log path=status output=status | search status=403",
     "cron_schedule": "*/10 * * * *",
     "dispatch.earliest_time": "-20m",
     "dispatch.latest_time": "now",
