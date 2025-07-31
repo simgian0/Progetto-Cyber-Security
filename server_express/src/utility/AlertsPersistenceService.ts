@@ -11,7 +11,7 @@ export class AlertPersistenceService {
     this.initialize();
   }
 
-  // Carica il file all'avvio (senza lock, dato che è eseguito una volta sola)
+  // Load the file at startup (without a lock, since it runs only once).
   private async initialize(): Promise<void> {
     try {
       await this.ensureAlertFileExists();
@@ -20,7 +20,7 @@ export class AlertPersistenceService {
     }
   }
 
-  // Crea il file se non esiste
+  // Create the file if it doesn't exist
   private async ensureAlertFileExists(): Promise<void> {
     try {
       await fsp.access(this.ALERTS_FILE);
@@ -29,7 +29,7 @@ export class AlertPersistenceService {
     }
   }
 
-  // Verifica se un alert è già stato creato (lettura diretta dal file)
+  // Check if an alert has already been created
   async isAlertInitialized(alertName: string): Promise<boolean> {
     try {
       const content = await fsp.readFile(this.ALERTS_FILE, 'utf8');
@@ -41,7 +41,7 @@ export class AlertPersistenceService {
     }
   }
 
-  // Segna un alert come creato (scrittura diretta sul file)
+  // Mark an alert as created
   async markAlertAsInitialized(alertName: string): Promise<void> {
     try {
       const content = await fsp.readFile(this.ALERTS_FILE, 'utf8');
@@ -59,10 +59,10 @@ export class AlertPersistenceService {
   
   async checkAndInitializeAlert(alertName: string): Promise<boolean> {
     try {
-        // Usa un lock per evitare race conditions
+        // Use a lock to prevent race conditions
         const lockFile = this.ALERTS_FILE + '.lock';
         
-        // Crea un lock file
+        // Create a lock file
         await fsp.writeFile(lockFile, '');
         
         try {
@@ -70,16 +70,16 @@ export class AlertPersistenceService {
             
             if (!alreadyExists) {
                 await this.markAlertAsInitialized(alertName);
-                return true; // Alert deve essere creato
+                return true; // Alert needs to be created
             }
             
-            return false; // Alert già esiste, non creare
+            return false; // Alert already exists, don't create
         } finally {
-            // Rimuovi il lock file
+            // Remove the lock file
             await fsp.unlink(lockFile).catch(() => {});
         }
     } catch (error) {
-        console.error(`Errore durante l'inizializzazione dell'alert ${alertName}:`, error);
+        console.error(`Error during alert initialization ${alertName}:`, error);
         throw error;
     }
 }

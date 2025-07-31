@@ -1,3 +1,4 @@
+//Class that create alerts
 import { SplunkAPIClient } from '../SplunkAPIClient';
 import { AlertPersistenceService } from '../../utility/AlertsPersistenceService';
 import { ensureLogDirectoryExists } from '../../middleware/splunkLogger';
@@ -40,7 +41,7 @@ export class AlertService {
                 const shouldCreate = await AlertNameJson.checkAndInitializeAlert(alert.name);
 
                 if (shouldCreate) {
-                    // Aggiungi un piccolo ritardo tra le operazioni
+                    // Add a small delay between operations
                     await new Promise(resolve => setTimeout(resolve, 10000));
 
                     const response = await this.apiClient.callAPI('POST', endpoint, params);

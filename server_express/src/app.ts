@@ -27,7 +27,7 @@ const connectDB = async () => {
         console.error('Error connecting to the database:', error);
     }
 };
-
+//Send a request to create an alert in Splunk.
 const alertSetting = async() =>{
     const alert = new AlertService();
     try{
