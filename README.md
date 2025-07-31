@@ -12,7 +12,7 @@
 
   <br/>
 
-  <p><strong>Realizzato con:</strong></p>
+  <p><strong>Powered by:</strong></p>
   <br/>
   <p>
     <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Made%20with-Docker-%230db7ed.svg?style=plastic&logo=docker&logoColor=white" /></a>
@@ -39,6 +39,9 @@
     - [Composizione dell'Infrastruttura](#composizione-dellinfrastruttura)
     - [Architettura Zero Trust](#architettura-zero-trust)
   - [Policy implementate](#policy-implementate)
+    - [Score di fiducia](#score-di-fiducia)
+    - [Policy che analizzano la richiesta](#policy-che-analizzano-la-richiesta)
+    - [Policy che analizzano il metodo ed i permessi](#policy-che-analizzano-il-metodo-ed-i-permessi)
   - [Installazione](#installazione)
   - [Avvio](#avvio)
   - [Autori](#autori)
@@ -109,51 +112,62 @@ Tutti i componenti della rete aziendale, siano essi interni o esterni, sono moni
 
 2. **Controlli di Sicurezza in Tempo Reale (PDP e PEP)**:
    - Ogni richiesta di accesso alle risorse è sottoposta a controlli di **autenticazione**, **autorizzazione** e **monitoraggio** in tempo reale. L'**analisi della fiducia** modifica dinamicamente lo **score di fiducia** di ogni richiesta, penalizzando richieste da reti non sicure o provenienti da IP con un comportamento sospetto.
-   - Le richieste il cui punteggio è basso (<40) verranno bloccate.
+   - Le richieste il cui punteggio è basso (<30) verranno bloccate.
 
 ## Policy implementate
-1. **GET sempre concesso**  
-   *Implementazione*: Server (middleware) + Squid (ACL)
+
+### Score di fiducia
+
+Ad ogni richiesta, al suo arrivo sul server express, viene assegnato uno score di fiducia.  
+Tale punteggio parte sempre da 50 punti e può arrivare ad un minimo di 1 fino ad un massimo di 100.
+
+### Policy che analizzano la richiesta
+
+1. **Controllo sulla fascia oraria di lavoro**  
+  Questa policy applica una penalità se il client effettua un numero significativo di richieste fuori dall'orario lavorativo standard (08:00–20:00). Ogni 10 richieste fuori orario, lo score del client viene ridotto di 0,5, con una penalità massima di 10.
  
-2. **Penalità per richieste malformate**  
-   *Implementazione*: Server (requestFormatCheck → score –)
+2. **Rifiuto delle richieste degli ip bloccati**  
+  Le richieste effettuate dagli ip inseriti all'interno di una **blocklist** sono bloccate e ignorate.
  
-3. **Fascia oraria di lavoro**  
-   *Implementazione*: Server + Squid  
-   - In orario 08:00-20:00 nessuna penalità, altrimenti score –  
+3. **Penalità per richieste effettuate da reti diverse dalla rete ethernet o wi-fi aziendali**  
+  - Le richieste effettuate dalla rete wifi aziendale (172.20.0.0/16) abbassano lo score di fiducia di 5 punti.
+  - Le richieste effettuate da reti esterne (172.18.0.0/16 oppure 172.24.0.0/16) abbassano lo score di fiducia di 10 punti.
+
+4. **Bonus al punteggio per richieste da rete ethernet aziendale**  
+  Le richieste effettuate dalla rete cablata aziendale (172.19.0.0/16) applica un bonus allo score di fiducia di 10 punti.
  
-4. **IP non in whitelist ➜ rifiuto**  
-   *Implementazione*: Server + Squid (blockList)
+5. **Troppe richieste in poco tempo abbassano lo score di fiducia per sospetto attacco DoS**  
+  Viene analizzata la media del tempo tra una richiesta e l'altra delle ultime 25 richieste, se è più bassa di 10 secondi penalizza il punteggio di 10 punti.
  
-5. **Sottoreti sconosciute rifiutate; rete non ethernet penalizzata**  
-   *Implementazione*: Server + Squid (scoreNetworkAnalysis → score –)
+6. **Penalità per gli IP che fanno molte richieste che non vanno a buon fine**  
+  Viene analizzato il numero di richieste non andate a buon fine delle ultime 25 richieste:
+  - Se le richieste con errori superano il 75% del totale, il punteggio viene penalizzato di 10 punti.
+  - Se le richieste con errori superano il 50% del totale, il punteggio viene penalizzato di 5 punti.
+  - Se le richieste con errori superano il 25% del totale, vengono aggiunti 5 punti allo score di fiducia.
+  - Se le richieste con errori sono inferiori al 25% del totale, vengono aggiunti 10 punti allo score di fiducia.
+
+### Policy che analizzano il metodo ed i permessi
+All'interno di un team ci sono tre diversi tipi di utente: Manager, impiegato e consulente.  
+Le risorse sono "drawings" per la quale sono definiti: il proprietario, il team in cui sono pubblicate e il suo contenuto.
+Manager: può visualizzare, creare, cancellare e modificare tutte le risorse all'interno del suo team. Inoltre può creare una risorsa all'interno di un altro team, per la quale ha tutti i permessi. 
+Impiegato: può visualizzare, creare e modificare tutte le risorse all'interno del suo solo team ma non può cancellarle. 
+Consulente: può visualizzare le risorse di tutti i team. 
+
+7. **GET concesso a tutti i ruoli**  
+  Tutti gli utenti autenticati possono fare una richiesta GET su una risorsa, purchè il loro score di fiducia sia sufficientemente alta.
  
-6. **Richieste da Wi-Fi ➜ score –**  
-   *Implementazione*: Server (scoreNetworkAnalysis)
+8. **Penalità per richieste malformate**  
+  Le richieste malformate (es. lunghezza della stringa del nome del Drawing più lunga di 255 caratteri) verranno bloccate. Inoltre lo score di fiducia sarà penalizzato di 5 punti.
  
-7. **Richieste da rete cablata ➜ score +**  
-   *Implementazione*: Server (scoreNetworkAnalysis)
+9.  **Gli utenti appartenenti ad un team non possono modificare risorse di altri team**  
+  - Gli utenti consulente ed impiegato non possono modificare, creare o cancellare risorse degli altri team.
+  - L'utente manager non può modificare o cancellare risorse di altri team, tranne se la risorsa appartiene a lui.
  
-8. **Too Many Requests (DoS light) ➜ score –**  
-   *Implementazione*: Server + Splunk (scoreDosAnalysis)
+10.  **Un consulente non può modificare o cancellare risorse del proprio team**  
+  Il ruolo di consulente non consente altre operazioni oltre alla visualizzazione del contenuto delle risorse dei vari team.
  
-9. **N errori consecutivi ➜ score –**  
-   *Implementazione*: Server + Splunk (scoreTrustAnalysis)
- 
-10. **Un team non può modificare risorse di altri team**  
-    *Implementazione*: Server + DB (checkTeam)
- 
-11. **Un consulente non può modificare o cancellare risorse del proprio team**  
-    *Implementazione*: Server + DB (permissionMiddleware)
- 
-12. **Un manager può creare risorse in team diversi dal suo**  
-    *Implementazione*: Server + DB (permissionMiddleware)
- 
-13. **Risorse create da un manager non cancellabili da non-manager**  
-    *Implementazione*: Server + DB (permissionMiddleware)
- 
-14. **Dipendenti/consulenti: sola lettura su risorse di team esterni**  
-    *Implementazione*: Server + DB (permissionMiddleware + checkTeam)
+11.  **Un manager può creare risorse in team diversi dal suo**  
+  Il ruolo di manager consente la creazione di risorse in team diversi dal proprio.
 
 ## Installazione
 Per installare e avviare correttamente l'applicazione, segui i seguenti passaggi:
@@ -163,6 +177,7 @@ Per installare e avviare correttamente l'applicazione, segui i seguenti passaggi
    git clone https://github.com/simgian0/Progetto-Cyber-Security.git
    cd Progetto-Cyber-Security
 ```
+
 
 2. **Configura il file .env**:
 Nel progetto, crea un file .env nella root directory del progetto. Il file .env contiene tutte le variabili di ambiente necessarie per configurare il database, il server e Splunk.
@@ -201,6 +216,7 @@ SPLUNK_PASSWORD=Chang3d!
  
 **SPLUNK_USERNAME e SPLUNK_PASSWORD**: Credenziali di accesso per Splunk.
  
+
 3. **Esecuzione applicazione**:
 Una volta configurato il file .env, si può avviare il progetto.  
 Con Docker installato, esegui il seguente comando all'interno della root del progetto:
@@ -210,6 +226,7 @@ docker-compose up --build
  
 Questo comando costruirà e avvierà tutti i servizi necessari, tra cui il database PostgreSQL, il server Express, Squid, Snort e Splunk.
  
+
 4. **Accesso al servizio**:
 Una volta che tutti i container sono attivi, i client iniziano ad operare autonomamente inviando richieste GET, POST, PUT e DELETE al server.   
 Puoi visualizzare i log inviati dai vari servizi a Splunk tramite:
@@ -217,7 +234,7 @@ Puoi visualizzare i log inviati dai vari servizi a Splunk tramite:
 - **Splunk GUI**: http://localhost:18100 (login con le credenziali configurate nel .env)
 
 ## Avvio
-Per avviare e configurare correttamente tutta l'infrastruttura è necessario eseguire le seguenti operazioni:
+Per consentire il corretto funzionamento di Splunk, dopo l'avvio dei container, è necessario eseguire le seguenti operazioni:
 - Attendere che si avvi la GUI di Splunk al seguente URL -> "http://localhost:18100/it-IT/"
 - Accedere con le credenziali presenti nel file .env
 - Inserire gli indici :
@@ -232,19 +249,25 @@ Per avviare e configurare correttamente tutta l'infrastruttura è necessario ese
   - Andare su Impostazioni -> Input Dati -> Raccolta eventi HTTP o HTTPS -> Impostazioni Globali
   - Togliere la spunta "Abilita SSL" e salvare
  
-**Dashboard**
+**Dashboard**  
 Al momento dell'avvio verranno effettuato delle API a Splunk per la creazione di Dashboard relative ai vari client.
 Queste saranno visualizzabili accedendo all'app "Search and Reporting" -> Dashboard
 <div align="center">
   <img src="./README/dashboard.png" width="800" />
 </div>
  
-**Alert**
+**Alert**  
 Allo stesso modo delle dashboard, verranno fatte delle chiamate API a Splunk per la creazione di alcuni alert.
 Questi alert andranno a analizzare i log ricevuti a Splunk e creare degli allarmi nel momento in cui certe condizioni si verificano.
 Anche questi saranno visualizzabili all'interno dell'app "Search and Reporting" alla voce Allarmi
 <div align="center">
   <img src="./README/alarms.png" width="800" />
+</div>
+
+**Search**  
+All'interno dell'app "Search and Reporting" alla voce "Ricerca" è possibile lanciare delle SPL query. Utili per effettuare delle rapide ricerce, analizzare log salvati nei vari indici ed eseguire operazioni statistiche semplici.
+<div align="center">
+  <img src="./README/search.png" width="800" />
 </div>
 
 ## Autori

@@ -19,13 +19,13 @@ export class requestFormatCheck {
         // All methods except GET and DELETE must include a body
         if (req.method !== "GET" && req.method !== "DELETE") {
             if (!req.body) {
-                req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                req.body.score = calculateScore(req.body.score, 'subtract', 5);
                 return next(errorMessageFactory.createMessage(ErrorMessage.missingParameters, "Payload can't be empty"));
             }
 
             // Validate 'name': must be a non-empty string and not exceed 255 characters
             if (!name || !this.isStringValid(name) || name.length > 255) {
-                req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                req.body.score = calculateScore(req.body.score, 'subtract', 5);
                 return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Drawing name not valid."));
             }
 
@@ -35,14 +35,14 @@ export class requestFormatCheck {
             if (req.method === "POST") {
                 // Validate 'owner_id': must be present and a valid number
                 if (!owner_id || isNaN(Number(owner_id))) {
-                    req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                    req.body.score = calculateScore(req.body.score, 'subtract', 5);
                     return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Owner ID Not Valid"));
 
                 }
 
                 // Validate 'target_team': must be a non-empty string, not too long
                 if (!target_team || !this.isStringValid(target_team) || target_team.length > 50) {
-                    req.body.score = calculateScore(req.body.score, 'subtract', 1);
+                    req.body.score = calculateScore(req.body.score, 'subtract', 5);
                     return next(errorMessageFactory.createMessage(ErrorMessage.invalidFormat, "Drawing target team Not Valid"));
 
                 }
