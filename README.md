@@ -149,9 +149,9 @@ Tale punteggio parte sempre da 50 punti e può arrivare ad un minimo di 1 fino a
 ### Policy che analizzano il metodo ed i permessi
 All'interno di un team ci sono tre diversi tipi di utente: Manager, impiegato e consulente.  
 Le risorse sono "drawings" per la quale sono definiti: il proprietario, il team in cui sono pubblicate e il suo contenuto.
-Manager: può visualizzare, creare, cancellare e modificare tutte le risorse all'interno del suo team. Inoltre può creare una risorsa all'interno di un altro team, per la quale ha tutti i permessi. 
-Impiegato: può visualizzare, creare e modificare tutte le risorse all'interno del suo solo team ma non può cancellarle. 
-Consulente: può visualizzare le risorse di tutti i team. 
+**Manager**: può visualizzare, creare, cancellare e modificare tutte le risorse all'interno del suo team. Inoltre può creare una risorsa all'interno di un altro team, per la quale ha tutti i permessi. 
+**Impiegato**: può visualizzare, creare e modificare tutte le risorse all'interno del suo solo team ma non può cancellarle. 
+**Consulente**: può visualizzare le risorse di tutti i team. 
 
 7. **GET concesso a tutti i ruoli**  
   Tutti gli utenti autenticati possono fare una richiesta GET su una risorsa, purchè il loro score di fiducia sia sufficientemente alta.
@@ -249,6 +249,7 @@ Per consentire il corretto funzionamento di Splunk, dopo l'avvio dei container, 
   - Andare su Impostazioni -> Input Dati -> Raccolta eventi HTTP o HTTPS -> Impostazioni Globali
   - Togliere la spunta "Abilita SSL" e salvare
  
+ 
 **Dashboard**  
 Al momento dell'avvio verranno effettuato delle API a Splunk per la creazione di Dashboard relative ai vari client.
 Queste saranno visualizzabili accedendo all'app "Search and Reporting" -> Dashboard
@@ -256,6 +257,7 @@ Queste saranno visualizzabili accedendo all'app "Search and Reporting" -> Dashbo
   <img src="./README/dashboard.png" width="800" />
 </div>
  
+
 **Alert**  
 Allo stesso modo delle dashboard, verranno fatte delle chiamate API a Splunk per la creazione di alcuni alert.
 Questi alert andranno a analizzare i log ricevuti a Splunk e creare degli allarmi nel momento in cui certe condizioni si verificano.
@@ -263,6 +265,7 @@ Anche questi saranno visualizzabili all'interno dell'app "Search and Reporting" 
 <div align="center">
   <img src="./README/alarms.png" width="800" />
 </div>
+
 
 **Search**  
 All'interno dell'app "Search and Reporting" alla voce "Ricerca" è possibile lanciare delle SPL query. Utili per effettuare delle rapide ricerce, analizzare log salvati nei vari indici ed eseguire operazioni statistiche semplici.
